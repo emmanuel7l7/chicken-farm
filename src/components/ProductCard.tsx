@@ -18,7 +18,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
         <div className="flex justify-between items-center">
           <span className="text-2xl font-bold text-primary-600">
-            ${product.price}
+            TZS {product.price}
           </span>
           <span className="text-sm text-gray-500">
             per {product.unit}

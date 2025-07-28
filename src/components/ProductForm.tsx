@@ -9,7 +9,15 @@ interface ProductFormProps {
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    category: Product['category'];
+    price: string;
+    unit: string;
+    description: string;
+    image: string | ArrayBuffer | null;
+    isActive: boolean;
+  }>({
     name: '',
     category: 'layers',
     price: '',
@@ -38,21 +46,33 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel }
     const productData = {
       ...formData,
       price: parseFloat(formData.price),
+      category: formData.category as Product['category'],
     };
 
     if (product) {
-      onSubmit({ ...productData, id: product.id });
+      onSubmit({ ...productData, id: product.id } as Product);
     } else {
-      onSubmit(productData);
+      onSubmit(productData as Omit<Product, 'id'>);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    }));
+    if (type === 'file') {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData(prev => ({ ...prev, image: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+      }));
+    }
   };
 
   const getUnitPlaceholder = () => {
@@ -140,7 +160,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel }
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price ($)
+                Price (TZS)
               </label>
               <input
                 type="number"
@@ -149,9 +169,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel }
                 onChange={handleChange}
                 required
                 min="0"
-                step="0.01"
+                step="1"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="0.00"
+                placeholder="0"
               />
             </div>
 
@@ -188,24 +208,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel }
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Image URL
+              Product Image
             </label>
             <input
-              type="url"
+              type="file"
               name="image"
-              value={formData.image}
+              accept="image/*"
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder={getDefaultImage()}
             />
-            {!formData.image && (
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, image: getDefaultImage() }))}
-                className="mt-1 text-sm text-primary-600 hover:text-primary-800"
-              >
-                Use default image
-              </button>
+            {formData.image && typeof formData.image === 'string' && (
+              <img src={formData.image} alt="Preview" className="mt-2 h-20 object-contain rounded" />
             )}
           </div>
 

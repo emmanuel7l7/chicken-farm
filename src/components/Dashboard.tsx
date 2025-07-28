@@ -65,7 +65,13 @@ const Dashboard: React.FC<DashboardProps> = ({ products, setProducts }) => {
       {showForm && (
         <ProductForm
           product={editingProduct}
-          onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
+          onSubmit={(product) => {
+            if ('id' in product) {
+              handleEditProduct(product as Product);
+            } else {
+              handleAddProduct(product as Omit<Product, 'id'>);
+            }
+          }}
           onCancel={cancelForm}
         />
       )}
@@ -114,7 +120,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, setProducts }) => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ${product.price} per {product.unit}
+                  TZS {product.price} per {product.unit}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

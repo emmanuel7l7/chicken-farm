@@ -6,9 +6,10 @@ interface SidebarProps {
   setActiveTab: (tab: string) => void;
   open?: boolean;
   onClose?: () => void;
+  rightOnMobile?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true, onClose, rightOnMobile }) => {
   const menuItems = [
     { id: 'farm', label: 'Farm', icon: Home },
     { id: 'about', label: 'About Us', icon: Info },
@@ -19,9 +20,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true,
   return (
     <div
       className={`
-        fixed left-0 top-0 z-20 w-64 bg-white shadow-lg h-screen
+        fixed top-0 ${rightOnMobile ? 'right-0' : 'left-0'} z-20 w-64 bg-white shadow-lg h-screen
         transition-transform duration-300
-        ${open ? 'translate-x-0' : '-translate-x-full'}
+        ${rightOnMobile
+          ? open ? 'translate-x-0' : 'translate-x-full'
+          : open ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 md:static md:block
       `}
       style={{ minWidth: '16rem' }}

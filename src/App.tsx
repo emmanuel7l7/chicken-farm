@@ -60,9 +60,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile Hamburger */}
+      {/* Mobile Hamburger (top right) */}
       <button
-        className="fixed top-4 left-4 z-30 p-2 bg-white rounded-md shadow-md md:hidden"
+        className="fixed top-4 right-4 z-30 p-2 bg-white rounded-md shadow-md md:hidden"
         onClick={() => setSidebarOpen(true)}
         aria-label="Open sidebar"
       >
@@ -78,6 +78,7 @@ const App: React.FC = () => {
         }}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        rightOnMobile={true}
       />
 
       {/* Main Content */}

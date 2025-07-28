@@ -22,16 +22,16 @@ const FarmPage: React.FC<FarmPageProps> = ({ products }) => {
   );
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Our Farm Products</h1>
+    <div className="p-2 sm:p-4 md:p-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6">Our Farm Products</h1>
       
       {/* Category Tabs */}
-      <div className="flex space-x-1 mb-8 bg-gray-100 p-1 rounded-lg">
+      <div className="flex flex-wrap gap-2 mb-6 sm:mb-8 bg-gray-100 p-1 rounded-lg">
         {categories.map((category) => (
           <button
             key={category.id}
             onClick={() => setActiveCategory(category.id)}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md font-medium transition-colors ${
               activeCategory === category.id
                 ? 'bg-white text-primary-600 shadow-sm'
                 : 'text-gray-600 hover:text-gray-800'
@@ -43,7 +43,7 @@ const FarmPage: React.FC<FarmPageProps> = ({ products }) => {
       </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />

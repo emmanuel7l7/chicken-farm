@@ -1,22 +1,67 @@
-import React from "react";
+import React, { useState } from "react";
+import Sidebar from "./components/Sidebar";
+import FarmPage from "./components/FarmPage";
+import AboutPage from "./components/AboutPage";
+import ContactPage from "./components/ContactPage";
+import Dashboard from "./components/Dashboard";
+import { Product } from "./types/Product";
 
 const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('farm');
+  const [products, setProducts] = useState<Product[]>([
+    {
+      id: '1',
+      name: 'Premium Layer Hens',
+      category: 'layers',
+      price: 25.00,
+      unit: 'chicken',
+      description: 'High-quality layer hens that produce fresh eggs daily. Well-fed and healthy.',
+      image: 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg',
+      isActive: true,
+    },
+    {
+      id: '2',
+      name: 'Fresh Farm Eggs',
+      category: 'eggs',
+      price: 8.50,
+      unit: 'tray',
+      description: 'Farm-fresh eggs from free-range hens. Rich in nutrients and perfect for cooking.',
+      image: 'https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg',
+      isActive: true,
+    },
+    {
+      id: '3',
+      name: 'Broiler Chickens',
+      category: 'broilers',
+      price: 18.00,
+      unit: 'chicken',
+      description: 'Healthy broiler chickens raised for meat production. Fed with quality feed.',
+      image: 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg',
+      isActive: true,
+    },
+  ]);
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'farm':
+        return <FarmPage products={products} />;
+      case 'about':
+        return <AboutPage />;
+      case 'contact':
+        return <ContactPage />;
+      case 'dashboard':
+        return <Dashboard products={products} setProducts={setProducts} />;
+      default:
+        return <FarmPage products={products} />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-200 to-green-200">
-      <header className="text-center mb-8">
-        <h1 className="text-5xl font-bold text-gray-800 mb-4">
-          Welcome to Chicken Farm
-        </h1>
-        <p className="text-lg text-gray-600">
-          Fresh eggs, happy hens, and quality you can trust.
-        </p>
-      </header>
-      <button
-        className="px-6 py-3 bg-primary-500 text-white rounded-lg shadow hover:bg-primary-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-opacity-50"
-        onClick={() => alert("Learn more about our farm!")}
-      >
-        Learn More
-      </button>
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="ml-64">
+        {renderContent()}
+      </div>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Sidebar from "./components/Sidebar";
+import { Menu } from "lucide-react";
 import FarmPage from "./components/FarmPage";
 import AboutPage from "./components/AboutPage";
 import ContactPage from "./components/ContactPage";
@@ -8,6 +9,7 @@ import { Product } from "./types/Product";
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('farm');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([
     {
       id: '1',
@@ -57,9 +59,29 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="ml-64">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Mobile Hamburger */}
+      <button
+        className="fixed top-4 left-4 z-30 p-2 bg-white rounded-md shadow-md md:hidden"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Open sidebar"
+      >
+        <Menu className="w-6 h-6 text-primary-600" />
+      </button>
+
+      {/* Sidebar */}
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setSidebarOpen(false); // close sidebar on tab select (mobile)
+        }}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      {/* Main Content */}
+      <div className="flex-1 md:ml-64 transition-all duration-300">
         {renderContent()}
       </div>
     </div>

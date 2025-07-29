@@ -24,11 +24,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
     setIsLoading(true);
 
     try {
-      const success = await login(formData.email, formData.password);
-      if (success) {
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
         onClose();
       } else {
-        setError('Invalid email or password');
+        setError(result.error || 'Invalid email or password');
       }
     } catch (error) {
       setError('An error occurred. Please try again.');
@@ -117,12 +117,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
             Sign up
           </button>
         </p>
-      </div>
-
-      <div className="mt-4 p-3 bg-gray-50 rounded-md text-sm text-gray-600">
-        <p className="font-medium mb-1">Demo Accounts:</p>
-        <p>Admin: admin@chickenfarm.com / admin123</p>
-        <p>Customer: customer@example.com / customer123</p>
       </div>
     </div>
   );

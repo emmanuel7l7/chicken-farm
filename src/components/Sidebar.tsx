@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Info, Phone, Settings, X, LogOut, User } from 'lucide-react';
+import { Home, Info, Phone, Settings, X, LogOut, User, BarChart3 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
@@ -11,7 +11,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true, onClose, rightOnMobile }) => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { profile, logout, isAuthenticated } = useAuth();
 
   const menuItems = [
     { id: 'farm', label: 'Farm', icon: Home },
@@ -20,8 +20,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true,
   ];
 
   // Only show dashboard for admin users
-  if (isAuthenticated && user?.role === 'admin') {
+  if (isAuthenticated && profile?.role === 'admin') {
     menuItems.push({ id: 'dashboard', label: 'Dashboard', icon: Settings });
+    menuItems.push({ id: 'analytics', label: 'Analytics', icon: BarChart3 });
   }
 
   return (
@@ -75,8 +76,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true,
           <div className="flex items-center mb-3">
             <User className="w-8 h-8 text-gray-400 mr-3" />
             <div>
-              <p className="text-sm font-medium text-gray-800">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.email}</p>
+              <p className="text-sm font-medium text-gray-800">{profile?.name}</p>
+              <p className="text-xs text-gray-500">{profile?.email}</p>
             </div>
           </div>
           <button

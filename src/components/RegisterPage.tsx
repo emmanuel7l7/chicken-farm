@@ -38,11 +38,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onClose })
     setIsLoading(true);
 
     try {
-      const success = await register(formData.email, formData.password, formData.name);
-      if (success) {
+      const result = await register(formData.email, formData.password, formData.name);
+      if (result.success) {
         onClose();
       } else {
-        setError('Email already exists or registration failed');
+        setError(result.error || 'Registration failed');
       }
     } catch (error) {
       setError('An error occurred. Please try again.');

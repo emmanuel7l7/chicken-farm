@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, AuthState } from '../types/User';
+import { supabase, Profile } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
 
-interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
-  logout: () => void;
+interface AuthContextType {
+  user: User | null;
+  profile: Profile | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,131 +23,121 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isAuthenticated: false,
-    isLoading: true,
-  });
-
-  // Mock users database (in real app, this would be a backend API)
-  const mockUsers = [
-    {
-      id: '1',
-      email: 'admin@chickenfarm.com',
-      password: 'admin123',
-      name: 'Farm Admin',
-      role: 'admin' as const,
-      createdAt: '2024-01-01T00:00:00Z',
-    },
-    {
-      id: '2',
-      email: 'customer@example.com',
-      password: 'customer123',
-      name: 'John Customer',
-      role: 'customer' as const,
-      createdAt: '2024-01-01T00:00:00Z',
-    },
-  ];
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored user session
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } catch (error) {
-        localStorage.removeItem('user');
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setIsLoading(false);
       }
-    } else {
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-    }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const fetchProfile = async (userId: string) => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const user = mockUsers.find(u => u.email === email && u.password === password);
-      
-      if (user) {
-        const { password: _, ...userWithoutPassword } = user;
-        setAuthState({
-          user: userWithoutPassword,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        return true;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+      } else {
+        setProfile(data);
       }
-      return false;
     } catch (error) {
-      return false;
+      console.error('Error fetching profile:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if user already exists
-      const existingUser = mockUsers.find(u => u.email === email);
-      if (existingUser) {
-        return false;
-      }
-
-      // Create new user
-      const newUser = {
-        id: Date.now().toString(),
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        name,
-        role: 'customer' as const,
-        createdAt: new Date().toISOString(),
-      };
-
-      // In a real app, you would save this to a database
-      mockUsers.push({ ...newUser, password });
-
-      setAuthState({
-        user: newUser,
-        isAuthenticated: true,
-        isLoading: false,
+        password,
       });
-      localStorage.setItem('user', JSON.stringify(newUser));
-      return true;
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
     } catch (error) {
-      return false;
+      return { success: false, error: 'An unexpected error occurred' };
     }
   };
 
-  const logout = () => {
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
-    localStorage.removeItem('user');
+  const register = async (email: string, password: string, name: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        // Create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: data.user.id,
+              email,
+              name,
+              role: 'customer',
+            },
+          ]);
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          return { success: false, error: 'Failed to create user profile' };
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
     <AuthContext.Provider
       value={{
-        ...authState,
+        user,
+        profile,
+        isAuthenticated: !!user,
+        isLoading,
         login,
         register,
         logout,

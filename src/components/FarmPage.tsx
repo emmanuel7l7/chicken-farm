@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import ProductCard from './ProductCard';
 import { Product } from '../types/Product';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FarmPageProps {
   products: Product[];
+  onShowAuth: () => void;
 }
 
-const FarmPage: React.FC<FarmPageProps> = ({ products }) => {
+const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth }) => {
   const [activeCategory, setActiveCategory] = useState('layers');
+  const { isAuthenticated } = useAuth();
 
   const categories = [
     { id: 'layers', label: 'Layers' },
@@ -46,7 +49,18 @@ const FarmPage: React.FC<FarmPageProps> = ({ products }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              onPurchase={() => {
+                if (!isAuthenticated) {
+                  onShowAuth();
+                } else {
+                  // Handle purchase logic here
+                  alert('Product added to cart!');
+                }
+              }}
+            />
           ))
         ) : (
           <div className="col-span-full text-center py-12">

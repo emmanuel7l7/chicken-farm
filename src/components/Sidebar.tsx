@@ -1,5 +1,6 @@
 import React from 'react';
-import { Home, Info, Phone, Settings, X } from 'lucide-react';
+import { Home, Info, Phone, Settings, X, LogOut, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,12 +11,18 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true, onClose, rightOnMobile }) => {
+  const { user, logout, isAuthenticated } = useAuth();
+
   const menuItems = [
     { id: 'farm', label: 'Farm', icon: Home },
     { id: 'about', label: 'About Us', icon: Info },
     { id: 'contact', label: 'Contact Us', icon: Phone },
-    { id: 'dashboard', label: 'Dashboard', icon: Settings },
   ];
+
+  // Only show dashboard for admin users
+  if (isAuthenticated && user?.role === 'admin') {
+    menuItems.push({ id: 'dashboard', label: 'Dashboard', icon: Settings });
+  }
 
   return (
     <div
@@ -61,6 +68,26 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true,
           );
         })}
       </nav>
+      
+      {/* User Info and Logout */}
+      {isAuthenticated && (
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+          <div className="flex items-center mb-3">
+            <User className="w-8 h-8 text-gray-400 mr-3" />
+            <div>
+              <p className="text-sm font-medium text-gray-800">{user?.name}</p>
+              <p className="text-xs text-gray-500">{user?.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center px-3 py-2 text-left text-red-600 hover:bg-red-50 rounded-md transition-colors"
+          >
+            <LogOut className="w-4 h-4 mr-3" />
+            Logout
+          </button>
+        </div>
+      )}
     </div>
   );
 };

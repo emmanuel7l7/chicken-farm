@@ -1,11 +1,22 @@
 import React from 'react';
+import { ShoppingCart } from 'lucide-react';
 import { Product } from '../types/Product';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ProductCardProps {
   product: Product;
+  onPurchase?: () => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onPurchase }) => {
+  const { isAuthenticated } = useAuth();
+
+  const handlePurchaseClick = () => {
+    if (onPurchase) {
+      onPurchase();
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
       <img
@@ -24,8 +35,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             per {product.unit}
           </span>
         </div>
-        <button className="w-full mt-2 sm:mt-3 bg-primary-500 text-white py-2 px-3 sm:px-4 rounded-md hover:bg-primary-600 transition-colors text-xs sm:text-base">
-          Add to Cart
+        <button 
+          onClick={handlePurchaseClick}
+          className="w-full mt-2 sm:mt-3 bg-primary-500 text-white py-2 px-3 sm:px-4 rounded-md hover:bg-primary-600 transition-colors text-xs sm:text-base flex items-center justify-center"
+        >
+          <ShoppingCart className="w-4 h-4 mr-2" />
+          {isAuthenticated ? 'Add to Cart' : 'Login to Buy'}
         </button>
       </div>
     </div>

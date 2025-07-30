@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, ShoppingCart, DollarSign } from 'lucide-react';
 import { supabase, Analytics, Order } from '../lib/supabase';
+import { formatCurrency, formatDate } from '../utils/validation';
+import LoadingSpinner from './LoadingSpinner';
 
 const AnalyticsPage: React.FC = () => {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -113,7 +115,7 @@ const AnalyticsPage: React.FC = () => {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <LoadingSpinner size="lg" className="mx-auto mb-4" />
           <p className="text-gray-600">Loading analytics...</p>
         </div>
       </div>
@@ -131,7 +133,7 @@ const AnalyticsPage: React.FC = () => {
             <DollarSign className="w-8 h-8 text-green-500 mr-3" />
             <div>
               <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">TZS {monthlyRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(monthlyRevenue)}</p>
             </div>
           </div>
         </div>
@@ -161,7 +163,7 @@ const AnalyticsPage: React.FC = () => {
             <TrendingUp className="w-8 h-8 text-orange-500 mr-3" />
             <div>
               <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">TZS {analytics?.total_revenue || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(analytics?.total_revenue || 0)}</p>
             </div>
           </div>
         </div>
@@ -220,7 +222,7 @@ const AnalyticsPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    TZS {Number(order.total_amount).toLocaleString()}
+                    {formatCurrency(Number(order.total_amount))}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

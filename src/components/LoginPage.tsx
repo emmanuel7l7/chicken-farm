@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { validateEmail } from '../utils/validation';
+import LoadingSpinner from './LoadingSpinner';
 
 interface LoginPageProps {
   onSwitchToRegister: () => void;
@@ -21,6 +23,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -101,9 +109,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-primary-500 text-white py-2 px-4 rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-primary-500 text-white py-2 px-4 rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
-          {isLoading ? 'Signing In...' : 'Sign In'}
+          {isLoading ? (
+            <>
+              <LoadingSpinner size="sm" className="mr-2" />
+              Signing In...
+            </>
+          ) : (
+            'Sign In'
+          )}
         </button>
       </form>
 

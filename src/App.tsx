@@ -1,20 +1,28 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Sidebar from "./components/Sidebar";
-import { Menu, User, LogIn } from "lucide-react";
+import { Menu, User, LogIn, ShoppingCart } from "lucide-react";
 import FarmPage from "./components/FarmPage";
 import AboutPage from "./components/AboutPage";
 import ContactPage from "./components/ContactPage";
+import AnalyticsPage from "./components/AnalyticsPage";
+import Cart from "./components/Cart";
+import CheckoutModal from "./components/CheckoutModal";
+import ErrorBoundary from "./components/ErrorBoundary";
 //import Dashboard from "./components/Dashboard";
 import AuthModal from "./components/AuthModal";
+import { useCart } from "./hooks/useCart";
 import { Product } from "./types/Product";
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('farm');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const { user, isAuthenticated, logout } = useAuth();
+  const { getTotalItems } = useCart();
 
   const [products, setProducts] = useState<Product[]>([
     {
@@ -71,11 +79,27 @@ const AppContent: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'farm':
-        return <FarmPage products={products} onShowAuth={() => handleShowAuth('login')} />;
+        return <FarmPage products={products} onShowAuth={() => handleShowAuth('login')} onShowCart={() => setCartOpen(true)} />;
       case 'about':
         return <AboutPage />;
       case 'contact':
         return <ContactPage />;
+      case 'analytics':
+        if (!isAuthenticated || user?.role !== 'admin') {
+          return (
+            <div className="p-6 text-center">
+              <h1 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h1>
+              <p className="text-gray-600 mb-4">You need admin privileges to access analytics.</p>
+              <button
+                onClick={() => handleShowAuth('login')}
+                className="bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600"
+              >
+                Login as Admin
+              </button>
+            </div>
+          );
+        }
+        return <AnalyticsPage />;
       case 'dashboard':
         if (!isAuthenticated || user?.role !== 'admin') {
           return (
@@ -100,9 +124,24 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50 flex">
       {/* Top Bar */}
       <div className="fixed top-0 right-0 z-30 p-4 flex items-center space-x-2">
+        {/* Cart Button */}
+        <button
+          onClick={() => setCartOpen(true)}
+          className="relative bg-white text-primary-600 px-3 py-1.5 rounded-md shadow-md hover:bg-gray-50 text-sm flex items-center"
+        >
+          <ShoppingCart className="w-4 h-4 mr-1" />
+          Cart
+          {getTotalItems() > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {getTotalItems()}
+            </span>
+          )}
+        </button>
+        
         {/* Auth Buttons */}
         {!isAuthenticated ? (
           <div className="flex space-x-2">
@@ -164,15 +203,34 @@ const AppContent: React.FC = () => {
         onClose={() => setAuthModalOpen(false)}
         initialMode={authMode}
       />
+      
+      {/* Cart */}
+      <Cart
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
+        onCheckout={() => {
+          setCartOpen(false);
+          setCheckoutOpen(true);
+        }}
+      />
+      
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+      />
     </div>
+    </ErrorBoundary>
   );
 };
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 

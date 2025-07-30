@@ -22,7 +22,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, open = true,
   // Only show dashboard for admin users
   if (isAuthenticated && profile?.role === 'admin') {
     menuItems.push({ id: 'dashboard', label: 'Dashboard', icon: Settings });
-    menuItems.push({ id: 'analytics', label: 'Analytics', icon: BarChart3 });
   }
 
   return (

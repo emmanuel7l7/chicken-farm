@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import ProductCard from './ProductCard';
 import { Product } from '../types/Product';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../hooks/useCart';
 
 interface FarmPageProps {
   products: Product[];
   onShowAuth: () => void;
+  onShowCart: () => void;
 }
 
-const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth }) => {
+const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth, onShowCart }) => {
   const [activeCategory, setActiveCategory] = useState('layers');
   const { isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
 
   const categories = [
     { id: 'layers', label: 'Layers' },
@@ -23,6 +26,25 @@ const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth }) => {
   const filteredProducts = products.filter(
     product => product.category === activeCategory && product.isActive
   );
+
+  const handleAddToCart = (product: Product) => {
+    if (!isAuthenticated) {
+      onShowAuth();
+      return;
+    }
+    addToCart(product);
+    // Show success message or animation
+    const button = document.activeElement as HTMLElement;
+    if (button) {
+      const originalText = button.textContent;
+      button.textContent = 'Added!';
+      button.style.backgroundColor = '#10b981';
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.style.backgroundColor = '';
+      }, 1000);
+    }
+  };
 
   return (
     <div className="p-2 sm:p-4 md:p-6">
@@ -52,14 +74,8 @@ const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth }) => {
             <ProductCard 
               key={product.id} 
               product={product} 
-              onPurchase={() => {
-                if (!isAuthenticated) {
-                  onShowAuth();
-                } else {
-                  // Handle purchase logic here
-                  alert('Product added to cart!');
-                }
-              }}
+              onAddToCart={() => handleAddToCart(product)}
+              onViewCart={onShowCart}
             />
           ))
         ) : (

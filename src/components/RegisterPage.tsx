@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { validateEmail, validatePassword } from '../utils/validation';
+import LoadingSpinner from './LoadingSpinner';
 
 interface RegisterPageProps {
   onSwitchToLogin: () => void;
@@ -24,14 +26,20 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onClose })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.errors[0]);
       return;
     }
 
@@ -154,9 +162,16 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onClose })
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-primary-500 text-white py-2 px-4 rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-primary-500 text-white py-2 px-4 rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
-          {isLoading ? 'Creating Account...' : 'Create Account'}
+          {isLoading ? (
+            <>
+              <LoadingSpinner size="sm" className="mr-2" />
+              Creating Account...
+            </>
+          ) : (
+            'Create Account'
+          )}
         </button>
       </form>
 

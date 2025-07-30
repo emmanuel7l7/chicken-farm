@@ -35,11 +35,9 @@ export const validatePassword = (password: string): { isValid: boolean; errors: 
 };
 
 export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-TZ', {
-    style: 'currency',
-    currency: 'TZS',
+  return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
-  }).format(amount);
+  }).format(amount) + ' TZS';
 };
 
 export const formatDate = (date: string | Date): string => {

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, Banknote } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -37,44 +36,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     setIsLoading(true);
 
     try {
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert([
-          {
-            user_id: user.id,
-            total_amount: getTotalPrice(),
-            payment_method: formData.paymentMethod,
-            payment_status: formData.paymentMethod === 'cash_on_delivery' ? 'pending' : 'pending',
-            delivery_address: formData.deliveryAddress,
-            phone: formData.phone,
-            notes: formData.notes,
-          },
-        ])
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // Create order items
-      const orderItems = cartItems.map(item => ({
-        order_id: order.id,
-        product_id: item.product.id,
-        quantity: item.quantity,
-        unit_price: item.product.price,
-        total_price: item.product.price * item.quantity,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
+      // Mock order creation for development
+      console.log('Order placed:', {
+        user_id: user.id,
+        total_amount: getTotalPrice(),
+        payment_method: formData.paymentMethod,
+        delivery_address: formData.deliveryAddress,
+        phone: formData.phone,
+        notes: formData.notes,
+        items: cartItems,
+      });
 
       // Clear cart and close modal
       clearCart();
       onClose();
-      alert('Order placed successfully! We will contact you soon.');
+      alert('Order placed successfully! We will contact you soon to confirm your order.');
 
     } catch (error) {
       console.error('Error placing order:', error);

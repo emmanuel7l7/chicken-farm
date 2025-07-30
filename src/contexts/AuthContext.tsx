@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, Profile } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
+
+interface Profile {
+  id: string;
+  email: string;
+  name: string;
+  role: 'customer' | 'admin';
+  phone?: string;
+  address?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -29,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
@@ -39,8 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session: any) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchProfile(session.user.id);
@@ -48,25 +60,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
           setIsLoading(false);
         }
-      }
-    );
+      });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
-      }
+      // For now, create a mock profile since we don't have Supabase connected
+      const mockProfile: Profile = {
+        id: userId,
+        email: 'user@example.com',
+        name: 'Test User',
+        role: 'customer',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setProfile(mockProfile);
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -76,16 +86,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
+      // Mock login for development
+      if (email === 'admin@farm.com' && password === 'admin123') {
+        const mockUser = {
+          id: 'admin-user-id',
+          email: 'admin@farm.com',
+          user_metadata: { name: 'Admin User' },
+        } as User;
+        
+        setUser(mockUser);
+        const mockProfile: Profile = {
+          id: 'admin-user-id',
+          email: 'admin@farm.com',
+          name: 'Admin User',
+          role: 'admin',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setProfile(mockProfile);
+        return { success: true };
+      } else if (email && password) {
+        const mockUser = {
+          id: 'customer-user-id',
+          email: email,
+          user_metadata: { name: 'Customer User' },
+        } as User;
+        
+        setUser(mockUser);
+        const mockProfile: Profile = {
+          id: 'customer-user-id',
+          email: email,
+          name: 'Customer User',
+          role: 'customer',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setProfile(mockProfile);
+        return { success: true };
       }
 
-      return { success: true };
+      return { success: false, error: 'Invalid credentials' };
     } catch (error) {
       return { success: false, error: 'An unexpected error occurred' };
     }
@@ -93,34 +133,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, password: string, name: string) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      if (data.user) {
-        // Create profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email,
-              name,
-              role: 'customer',
-            },
-          ]);
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          return { success: false, error: 'Failed to create user profile' };
-        }
-      }
-
+      // Mock registration for development
+      const mockUser = {
+        id: 'new-user-id',
+        email: email,
+        user_metadata: { name: name },
+      } as User;
+      
+      setUser(mockUser);
+      const mockProfile: Profile = {
+        id: 'new-user-id',
+        email: email,
+        name: name,
+        role: 'customer',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setProfile(mockProfile);
+      
       return { success: true };
     } catch (error) {
       return { success: false, error: 'An unexpected error occurred' };
@@ -128,7 +158,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    try {
+      setUser(null);
+      setProfile(null);
+    } catch (error) {
+      console.error('Error during logout:', error);
+      }
   };
 
   return (

@@ -73,7 +73,7 @@ const AnalyticsPage: React.FC = () => {
       if (error) {
         console.error('Error fetching monthly revenue:', error);
       } else {
-        const total = data?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+        const total = data?.reduce((sum: number, order: any) => sum + Number(order.total_amount), 0) || 0;
         setMonthlyRevenue(total);
       }
     } catch (error) {

@@ -5,7 +5,7 @@ import { Menu, User, LogIn } from "lucide-react";
 import FarmPage from "./components/FarmPage";
 import AboutPage from "./components/AboutPage";
 import ContactPage from "./components/ContactPage";
-import Dashboard from "./components/Dashboard";
+//import Dashboard from "./components/Dashboard";
 import AuthModal from "./components/AuthModal";
 import { Product } from "./types/Product";
 
@@ -91,7 +91,9 @@ const AppContent: React.FC = () => {
             </div>
           );
         }
-        return <Dashboard products={products} setProducts={setProducts} />;
+        // Uncomment the next line if you want to enable the Dashboard:
+        // return <Dashboard products={products} setProducts={setProducts} />;
+        return null;
       default:
         return <FarmPage products={products} onShowAuth={() => handleShowAuth('login')} />;
     }
@@ -121,7 +123,7 @@ const AppContent: React.FC = () => {
         ) : (
           <div className="bg-white rounded-md shadow-md px-3 py-1.5 flex items-center space-x-2">
             <User className="w-4 h-4 text-primary-600" />
-            <span className="text-sm text-gray-700">{user?.name}</span>
+            <span className="text-sm text-gray-700">{user?.user_metadata?.name || user?.email}</span>
           </div>
         )}
         

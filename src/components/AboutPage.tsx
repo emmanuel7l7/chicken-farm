@@ -4,22 +4,19 @@ import { Award, Heart, Leaf } from 'lucide-react';
 const AboutPage: React.FC = () => {
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">About Our Farm</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Kuhusu Shamba Letu</h1>
       
       <div className="bg-white rounded-lg shadow-md p-8 mb-8">
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Fresh, Quality Poultry Since 1985
+              Fresh, Kuku Safi na Bora.
             </h2>
             <p className="text-gray-600 mb-4">
-              Our family-owned chicken farm has been providing fresh, high-quality poultry 
-              products to our community for over 35 years. We pride ourselves on sustainable 
-              farming practices and the humane treatment of our animals.
+            Shamba letu la kuku linalomilikiwa na familia limekuwa likihudumia jamii yetu kwa zaidi ya miaka 25 sasa, kwa kutoa bidhaa safi na bora za kuku. Tunajivunia kutumia mbinu endelevu za kilimo na kuwahudumia wanyama wetu kwa njia ya kibinadamu.
             </p>
             <p className="text-gray-600">
-              From farm-fresh eggs to premium chicken meat, we ensure that every product 
-              meets the highest standards of quality and freshness.
+            Kuanzia mayai moja kwa moja kutoka shambani hadi nyama ya kuku ya kiwango cha juu, tunahakikisha kila bidhaa inakidhi viwango vya juu vya ubora na usafi.
             </p>
           </div>
           <img

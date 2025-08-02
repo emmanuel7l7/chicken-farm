@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
+import { User as CustomUser } from '../types/User';
 
 interface Profile {
   id: string;
@@ -14,7 +15,7 @@ interface Profile {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: CustomUser | null;
   profile: Profile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -34,17 +35,31 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<CustomUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // For development, skip Supabase auth if not configured
+    if (!process.env.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL === 'https://mock.supabase.co') {
+      setIsLoading(false);
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
       if (session?.user) {
+        const customUser: CustomUser = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || 'User',
+          role: 'customer',
+          createdAt: session.user.created_at,
+        };
+        setUser(customUser);
         fetchProfile(session.user.id);
       } else {
+        setUser(null);
         setIsLoading(false);
       }
     });
@@ -53,10 +68,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-        setUser(session?.user ?? null);
         if (session?.user) {
+          const customUser: CustomUser = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.name || 'User',
+            role: 'customer',
+            createdAt: session.user.created_at,
+          };
+          setUser(customUser);
           await fetchProfile(session.user.id);
         } else {
+          setUser(null);
           setProfile(null);
           setIsLoading(false);
         }
@@ -88,11 +111,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Mock login for development
       if (email === 'admin@farm.com' && password === 'admin123') {
-        const mockUser = {
+        const mockUser: CustomUser = {
           id: 'admin-user-id',
           email: 'admin@farm.com',
-          user_metadata: { name: 'Admin User' },
-        } as User;
+          name: 'Admin User',
+          role: 'admin',
+          createdAt: new Date().toISOString(),
+        };
         
         setUser(mockUser);
         const mockProfile: Profile = {
@@ -106,11 +131,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(mockProfile);
         return { success: true };
       } else if (email && password) {
-        const mockUser = {
+        const mockUser: CustomUser = {
           id: 'customer-user-id',
           email: email,
-          user_metadata: { name: 'Customer User' },
-        } as User;
+          name: 'Customer User',
+          role: 'customer',
+          createdAt: new Date().toISOString(),
+        };
         
         setUser(mockUser);
         const mockProfile: Profile = {
@@ -134,11 +161,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string, name: string) => {
     try {
       // Mock registration for development
-      const mockUser = {
+      const mockUser: CustomUser = {
         id: 'new-user-id',
         email: email,
-        user_metadata: { name: name },
-      } as User;
+        name: name,
+        role: 'customer',
+        createdAt: new Date().toISOString(),
+      };
       
       setUser(mockUser);
       const mockProfile: Profile = {

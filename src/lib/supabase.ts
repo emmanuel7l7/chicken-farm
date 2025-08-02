@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL!;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY!;
+// For development, use mock values if environment variables are not set
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://mock.supabase.co';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'mock-key';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

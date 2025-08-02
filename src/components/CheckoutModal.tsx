@@ -35,7 +35,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
     setIsLoading(true);
 
-    try {
+   try {
       // Mock order creation for development
       console.log('Order placed:', {
         user_id: user.id,
@@ -45,6 +45,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         phone: formData.phone,
         notes: formData.notes,
         items: cartItems,
+        
       });
 
       // Clear cart and close modal

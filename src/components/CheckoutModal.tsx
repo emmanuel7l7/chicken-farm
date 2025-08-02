@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, Banknote } from 'lucide-react';
-import { useCart } from '../hooks/useCart';
+import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 
 interface CheckoutModalProps {

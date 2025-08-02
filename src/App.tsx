@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { CartProvider } from "./contexts/CartContext";
 import Sidebar from "./components/Sidebar";
 import { Menu, User, LogIn, ShoppingCart } from "lucide-react";
 import FarmPage from "./components/FarmPage";
@@ -11,7 +12,7 @@ import CheckoutModal from "./components/CheckoutModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Dashboard from "./components/Dashboard";
 import AuthModal from "./components/AuthModal";
-import { useCart } from "./hooks/useCart";
+import { useCart } from "./contexts/CartContext";
 import { Product } from "./types/Product";
 
 const AppContent: React.FC = () => {
@@ -252,7 +253,9 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppContent />
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

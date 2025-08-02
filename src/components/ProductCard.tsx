@@ -15,6 +15,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onViewC
 
   const handleAddToCartClick = () => {
     console.log('ProductCard: Add to cart clicked for', product.name);
+    console.log('ProductCard: onAddToCart function exists:', !!onAddToCart);
     if (onAddToCart) {
       onAddToCart();
     } else {

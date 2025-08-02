@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ProductCard from './ProductCard';
 import { Product } from '../types/Product';
 import { useAuth } from '../contexts/AuthContext';
-import { useCart } from '../hooks/useCart';
+import { useCart } from '../contexts/CartContext';
 
 interface FarmPageProps {
   products: Product[];

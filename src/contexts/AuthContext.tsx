@@ -40,8 +40,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // For development, skip Supabase auth if not configured
-    if (!process.env.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL === 'https://mock.supabase.co') {
+    // Check if Supabase is configured
+    if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+      console.log('Supabase not configured, using mock auth');
       setIsLoading(false);
       return;
     }
@@ -90,16 +91,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      // For now, create a mock profile since we don't have Supabase connected
-      const mockProfile: Profile = {
-        id: userId,
-        email: 'user@example.com',
-        name: 'Test User',
-        role: 'customer',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setProfile(mockProfile);
+      if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+        // Mock profile for development
+        const mockProfile: Profile = {
+          id: userId,
+          email: 'user@example.com',
+          name: 'Test User',
+          role: 'customer',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setProfile(mockProfile);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -109,50 +126,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      // Mock login for development
-      if (email === 'admin@farm.com' && password === 'admin123') {
-        const mockUser: CustomUser = {
-          id: 'admin-user-id',
-          email: 'admin@farm.com',
-          name: 'Admin User',
-          role: 'admin',
-          createdAt: new Date().toISOString(),
-        };
-        
-        setUser(mockUser);
-        const mockProfile: Profile = {
-          id: 'admin-user-id',
-          email: 'admin@farm.com',
-          name: 'Admin User',
-          role: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        setProfile(mockProfile);
-        return { success: true };
-      } else if (email && password) {
-        const mockUser: CustomUser = {
-          id: 'customer-user-id',
-          email: email,
-          name: 'Customer User',
-          role: 'customer',
-          createdAt: new Date().toISOString(),
-        };
-        
-        setUser(mockUser);
-        const mockProfile: Profile = {
-          id: 'customer-user-id',
-          email: email,
-          name: 'Customer User',
-          role: 'customer',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        setProfile(mockProfile);
-        return { success: true };
+      if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+        // Mock login for development
+        if (email === 'admin@farm.com' && password === 'admin123') {
+          const mockUser: CustomUser = {
+            id: 'admin-user-id',
+            email: 'admin@farm.com',
+            name: 'Admin User',
+            role: 'admin',
+            createdAt: new Date().toISOString(),
+          };
+          
+          setUser(mockUser);
+          const mockProfile: Profile = {
+            id: 'admin-user-id',
+            email: 'admin@farm.com',
+            name: 'Admin User',
+            role: 'admin',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          setProfile(mockProfile);
+          return { success: true };
+        } else if (email && password) {
+          const mockUser: CustomUser = {
+            id: 'customer-user-id',
+            email: email,
+            name: 'Customer User',
+            role: 'customer',
+            createdAt: new Date().toISOString(),
+          };
+          
+          setUser(mockUser);
+          const mockProfile: Profile = {
+            id: 'customer-user-id',
+            email: email,
+            name: 'Customer User',
+            role: 'customer',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          setProfile(mockProfile);
+          return { success: true };
+        }
+        return { success: false, error: 'Invalid credentials' };
       }
 
-      return { success: false, error: 'Invalid credentials' };
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
     } catch (error) {
       return { success: false, error: 'An unexpected error occurred' };
     }
@@ -160,26 +189,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, password: string, name: string) => {
     try {
-      // Mock registration for development
-      const mockUser: CustomUser = {
-        id: 'new-user-id',
-        email: email,
-        name: name,
-        role: 'customer',
-        createdAt: new Date().toISOString(),
-      };
-      
-      setUser(mockUser);
-      const mockProfile: Profile = {
-        id: 'new-user-id',
-        email: email,
-        name: name,
-        role: 'customer',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setProfile(mockProfile);
-      
+      if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+        // Mock registration for development
+        const mockUser: CustomUser = {
+          id: 'new-user-id',
+          email: email,
+          name: name,
+          role: 'customer',
+          createdAt: new Date().toISOString(),
+        };
+        
+        setUser(mockUser);
+        const mockProfile: Profile = {
+          id: 'new-user-id',
+          email: email,
+          name: name,
+          role: 'customer',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setProfile(mockProfile);
+        
+        return { success: true };
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name,
+          },
+        },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Create profile in database
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: data.user.id,
+              email: email,
+              name: name,
+              role: 'customer',
+            },
+          ]);
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+      }
+
       return { success: true };
     } catch (error) {
       return { success: false, error: 'An unexpected error occurred' };
@@ -188,11 +253,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      if (process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY) {
+        await supabase.auth.signOut();
+      }
       setUser(null);
       setProfile(null);
     } catch (error) {
       console.error('Error during logout:', error);
-      }
+    }
   };
 
   return (

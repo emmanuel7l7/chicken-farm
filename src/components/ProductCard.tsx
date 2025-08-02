@@ -14,8 +14,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onViewC
   const { isAuthenticated } = useAuth();
 
   const handleAddToCartClick = () => {
+    console.log('ProductCard: Add to cart clicked for', product.name);
     if (onAddToCart) {
       onAddToCart();
+    } else {
+      console.log('ProductCard: No onAddToCart function provided');
     }
   };
 

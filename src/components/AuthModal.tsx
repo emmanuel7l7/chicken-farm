@@ -12,6 +12,11 @@ interface AuthModalProps {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
 
+  // Update mode when initialMode changes
+  React.useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
   if (!isOpen) return null;
 
   return (

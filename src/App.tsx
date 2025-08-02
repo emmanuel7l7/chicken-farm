@@ -145,7 +145,7 @@ const AppContent: React.FC = () => {
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-50 flex">
         {/* Top Bar */}
-        <div className="fixed top-0 right-0 z-30 p-4 flex items-center space-x-2">
+        <div className="fixed top-0 right-0 z-30 p-4 flex items-center space-x-2 bg-white/90 backdrop-blur-sm border-b border-gray-200">
           {/* Cart Button */}
           <button
             onClick={() => setCartOpen(true)}
@@ -172,7 +172,7 @@ const AppContent: React.FC = () => {
               </button>
               <button
                 onClick={() => handleShowAuth('register')}
-                className="bg-primary-500 text-white px-3 py-1.5 rounded-md shadow-md hover:bg-primary-600 text-sm"
+                className="bg-primary-500 text-white px-3 py-1.5 rounded-md shadow-md hover:bg-primary-600 text-sm flex items-center"
               >
                 Register
               </button>
@@ -217,7 +217,7 @@ const AppContent: React.FC = () => {
         />
 
         {/* Main Content */}
-        <div className="flex-1 md:ml-64 transition-all duration-300 pt-16 md:pt-0">
+        <div className="flex-1 md:ml-64 transition-all duration-300 pt-20 md:pt-0">
           {renderContent()}
         </div>
         

@@ -32,18 +32,11 @@ const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth, onShowCart })
       onShowAuth();
       return;
     }
+    
     addToCart(product);
-    // Show success message or animation
-    const button = document.activeElement as HTMLElement;
-    if (button) {
-      const originalText = button.textContent;
-      button.textContent = 'Added!';
-      button.style.backgroundColor = '#10b981';
-      setTimeout(() => {
-        button.textContent = originalText;
-        button.style.backgroundColor = '';
-      }, 1000);
-    }
+    
+    // Show a simple alert for now - you can replace with a toast notification later
+    alert(`${product.name} added to cart!`);
   };
 
   return (

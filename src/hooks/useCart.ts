@@ -27,16 +27,21 @@ export const useCart = () => {
   }, [cartItems]);
 
   const addToCart = (product: Product, quantity: number = 1) => {
+    console.log('Adding to cart:', product.name, 'quantity:', quantity);
     setCartItems(prev => {
       const existingItem = prev.find(item => item.product.id === product.id);
       if (existingItem) {
-        return prev.map(item =>
+        const updated = prev.map(item =>
           item.product.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
+        console.log('Updated existing item, new cart:', updated);
+        return updated;
       }
-      return [...prev, { product, quantity }];
+      const newCart = [...prev, { product, quantity }];
+      console.log('Added new item, new cart:', newCart);
+      return newCart;
     });
   };
 

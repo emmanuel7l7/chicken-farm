@@ -28,15 +28,17 @@ const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth, onShowCart })
   );
 
   const handleAddToCart = (product: Product) => {
+    console.log('FarmPage: handleAddToCart called for', product.name);
+    console.log('FarmPage: isAuthenticated:', isAuthenticated);
+    
     if (!isAuthenticated) {
+      console.log('FarmPage: User not authenticated, showing auth modal');
       onShowAuth();
       return;
     }
     
+    console.log('FarmPage: Adding product to cart:', product);
     addToCart(product);
-    
-    // Show a simple alert for now - you can replace with a toast notification later
-    alert(`${product.name} added to cart!`);
   };
 
   return (
@@ -67,7 +69,10 @@ const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth, onShowCart })
             <ProductCard 
               key={product.id} 
               product={product} 
-              onAddToCart={() => handleAddToCart(product)}
+              onAddToCart={() => {
+                console.log('FarmPage: ProductCard onAddToCart triggered for', product.name);
+                handleAddToCart(product);
+              }}
               onViewCart={onShowCart}
             />
           ))

@@ -3,17 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-// Create a fallback client for development
-const createSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase environment variables not found. Running in mock mode.');
-    // Return a mock client that won't cause errors
-    return null;
-  }
-  return createClient(supabaseUrl, supabaseAnonKey);
-};
+// Create Supabase client
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
-export const supabase = createSupabaseClient();
 export const isSupabaseConfigured = !!supabase;
 
 // Database types
@@ -28,7 +22,7 @@ export interface Profile {
   updated_at: string;
 }
 
-export interface Product {
+export interface DatabaseProduct {
   id: string;
   name: string;
   category: 'layers' | 'broilers' | 'chicks' | 'eggs' | 'meat';
@@ -66,7 +60,7 @@ export interface OrderItem {
   unit_price: number;
   total_price: number;
   created_at: string;
-  product?: Product;
+  product?: DatabaseProduct;
 }
 
 export interface Payment {
@@ -92,3 +86,12 @@ export interface Analytics {
   created_at: string;
   updated_at: string;
 }
+
+// Helper functions
+export const handleSupabaseError = (error: any) => {
+  console.error('Supabase error:', error);
+  if (error?.message) {
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+};

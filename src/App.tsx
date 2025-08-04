@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import { Toaster } from 'react-hot-toast';
 import Sidebar from "./components/Sidebar";
 import { Menu, User, LogIn, ShoppingCart } from "lucide-react";
 import FarmPage from "./components/FarmPage";
@@ -145,6 +146,32 @@ const AppContent: React.FC = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-50 flex">
+        {/* Toast Notifications */}
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#22c55e',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              duration: 5000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+
         {/* Top Bar */}
         <div className="fixed top-0 right-0 z-30 p-4 flex items-center space-x-2 bg-white/90 backdrop-blur-sm border-b border-gray-200">
           {/* Cart Button */}

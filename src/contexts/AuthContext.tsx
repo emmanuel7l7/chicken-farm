@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, handleSupabaseError } from '../lib/supabase';
 import { User as CustomUser } from '../types/User';
+import toast from 'react-hot-toast';
 
 interface Profile {
   id: string;
@@ -22,6 +23,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<CustomUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMockMode] = useState(!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY);
+  const [isMockMode] = useState(!isSupabaseConfigured);
 
   // Initialize auth state
   useEffect(() => {
@@ -50,7 +52,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase!.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          setIsLoading(false);
+          return;
+        }
         
         if (session?.user) {
           await handleAuthenticatedUser(session.user);
@@ -61,7 +69,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
       }
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      // Listen for auth changes
+      const { data: { subscription } } = supabase!.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
         if (session?.user) {
           await handleAuthenticatedUser(session.user);
         } else {
@@ -76,20 +87,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, [isMockMode]);
 
-  const handleAuthenticatedUser = async (user: any) => {
-    const customUser: CustomUser = {
-      id: user.id,
-      email: user.email || '',
-      name: user.user_metadata?.name || 'User',
-      role: 'customer',
-      createdAt: user.created_at,
-    };
-    setUser(customUser);
-    await fetchProfile(user.id);
+  const handleAuthenticatedUser = async (authUser: any) => {
+    try {
+      const customUser: CustomUser = {
+        id: authUser.id,
+        email: authUser.email || '',
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        role: 'customer',
+        createdAt: authUser.created_at,
+      };
+      
+      setUser(customUser);
+      await fetchProfile(authUser.id);
+    } catch (error) {
+      console.error('Error handling authenticated user:', error);
+    }
   };
 
   const fetchProfile = async (userId: string) => {
-    setIsLoading(true);
     try {
       if (isMockMode) {
         const mockProfile: Profile = {
@@ -104,18 +119,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile doesn't exist, create one
+          const newProfile = {
+            id: userId,
+            email: user?.email || '',
+            name: user?.name || 'User',
+            role: 'customer' as const,
+          };
+
+          const { data: createdProfile, error: createError } = await supabase!
+            .from('profiles')
+            .insert([newProfile])
+            .select()
+            .single();
+
+          if (createError) {
+            throw createError;
+          }
+
+          setProfile(createdProfile);
+        } else {
+          throw error;
+        }
+      } else {
+        setProfile(data);
+      }
     } catch (error) {
       console.error('Profile fetch error:', error);
-    } finally {
-      setIsLoading(false);
+      toast.error('Failed to load profile');
     }
   };
 
@@ -124,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Mock authentication
       if (isMockMode) {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         if (!email || !password) {
           throw new Error('Email and password are required');
@@ -146,17 +185,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUser(mockUser);
         setProfile(mockProfile);
+        toast.success('Logged in successfully!');
         return { success: true };
       }
 
       // Real authentication
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase!.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
       if (error) throw error;
-      return { success: true };
+      
+      if (data.user) {
+        toast.success('Logged in successfully!');
+        return { success: true };
+      }
+      
+      throw new Error('Login failed');
     } catch (error: any) {
+      const errorMessage = handleSupabaseError(error);
+      toast.error(errorMessage);
       return { 
         success: false, 
-        error: error.message || 'Login failed. Please try again.' 
+        error: errorMessage
       };
     } finally {
       setIsLoading(false);
@@ -167,7 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       if (isMockMode) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         const mockUser: CustomUser = {
           id: `mock-${Math.random().toString(36).substr(2, 9)}`,
@@ -185,31 +237,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUser(mockUser);
         setProfile(mockProfile);
+        toast.success('Account created successfully!');
         return { success: true };
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase!.auth.signUp({
         email,
         password,
-        options: { data: { name } }
+        options: { 
+          data: { name },
+          emailRedirectTo: window.location.origin
+        }
       });
 
       if (error) throw error;
 
       if (data.user) {
-        await supabase.from('profiles').insert([{
-          id: data.user.id,
-          email,
-          name,
-          role: 'customer'
-        }]);
+        // Profile will be created automatically via database trigger or in fetchProfile
+        toast.success('Account created successfully!');
+        return { success: true };
       }
-
-      return { success: true };
+      
+      throw new Error('Registration failed');
     } catch (error: any) {
+      const errorMessage = handleSupabaseError(error);
+      toast.error(errorMessage);
       return { 
         success: false, 
-        error: error.message || 'Registration failed. Please try again.' 
+        error: errorMessage
       };
     } finally {
       setIsLoading(false);
@@ -219,12 +274,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       if (!isMockMode) {
-        await supabase.auth.signOut();
+        const { error } = await supabase!.auth.signOut();
+        if (error) throw error;
       }
+      
       setUser(null);
       setProfile(null);
+      toast.success('Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    try {
+      if (isMockMode) {
+        setProfile(prev => prev ? { ...prev, ...updates } : null);
+        toast.success('Profile updated successfully!');
+        return { success: true };
+      }
+
+      const { data, error } = await supabase!
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setProfile(data);
+      toast.success('Profile updated successfully!');
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage = handleSupabaseError(error);
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -239,6 +329,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        updateProfile,
       }}
     >
       {children}

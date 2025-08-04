@@ -16,32 +16,39 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { login } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { login, isMockMode } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!validateEmail(formData.email)) {
       setError('Please enter a valid email address');
       return;
     }
-    
-    setIsLoading(true);
+
+    if (!formData.password) {
+      setError('Please enter your password');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       const result = await login(formData.email, formData.password);
-      if (result.success) {
-        onClose();
-      } else {
-        setError(result.error || 'Invalid email or password');
+      
+      if (!result.success) {
+        setError(result.error || 'Login failed. Please try again.');
+        return;
       }
+
+      onClose();
     } catch (error) {
-      setError('An error occurred. Please try again.');
+      setError('An unexpected error occurred');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -53,12 +60,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
   };
 
   return (
-    <div className="bg-white rounded-lg p-8 w-full max-w-md">
+    <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-xl">
       <div className="text-center mb-6">
         <LogIn className="w-12 h-12 text-primary-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
         <p className="text-gray-600">Sign in to your account</p>
       </div>
+
+      {isMockMode && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-md mb-4 text-sm">
+          <p className="font-medium">Demo Mode Active</p>
+          <p className="mt-1">Try these credentials:</p>
+          <ul className="list-disc pl-5 mt-1">
+            <li>Admin: admin@farm.com / admin123</li>
+            <li>Any email/password will work for customer</li>
+          </ul>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
@@ -68,10 +86,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Email Address
           </label>
           <input
+            id="email"
             type="email"
             name="email"
             value={formData.email}
@@ -79,15 +98,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="your@email.com"
+            autoComplete="username"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             Password
           </label>
           <div className="relative">
             <input
+              id="password"
               type={showPassword ? 'text' : 'password'}
               name="password"
               value={formData.password}
@@ -95,11 +116,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
               required
               className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="Enter your password"
+              autoComplete="current-password"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -108,13 +131,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
 
         <button
           type="submit"
-          disabled={isLoading}
-          className="w-full bg-primary-500 text-white py-2 px-4 rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          disabled={isSubmitting}
+          className="w-full bg-primary-500 text-white py-2 px-4 rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {isLoading ? (
+          {isSubmitting ? (
             <>
-              <LoadingSpinner size="sm" className="mr-2" />
-              Signing In...
+              <LoadingSpinner size="sm" />
+              <span>Signing In...</span>
             </>
           ) : (
             'Sign In'
@@ -127,7 +150,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
           Don't have an account?{' '}
           <button
             onClick={onSwitchToRegister}
-            className="text-primary-500 hover:text-primary-600 font-medium"
+            className="text-primary-500 hover:text-primary-600 font-medium focus:outline-none"
           >
             Sign up
           </button>

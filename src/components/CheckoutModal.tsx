@@ -10,7 +10,7 @@ interface CheckoutModalProps {
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   const { cartItems, getTotalPrice, clearCart } = useCart();
-  const { user, profile } = useAuth();
+  const { user } = useAuth(); // ✅ Removed unused `profile`
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     paymentMethod: 'cash_on_delivery',
@@ -35,8 +35,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
 
     setIsLoading(true);
 
-   try {
-      // Mock order creation for development
+    try {
       console.log('Order placed:', {
         user_id: user.id,
         total_amount: getTotalPrice(),
@@ -45,14 +44,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         phone: formData.phone,
         notes: formData.notes,
         items: cartItems,
-        
       });
 
-      // Clear cart and close modal
       clearCart();
       onClose();
       alert('Order placed successfully! We will contact you soon to confirm your order.');
-
     } catch (error) {
       console.error('Error placing order:', error);
       alert('Failed to place order. Please try again.');

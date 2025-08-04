@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { User } from '@supabase/supabase-js';
 import { User as CustomUser } from '../types/User';
 
 interface Profile {
@@ -19,6 +18,7 @@ interface AuthContextType {
   profile: Profile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isMockMode: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -38,66 +38,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<CustomUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMockMode] = useState(!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY);
 
+  // Initialize auth state
   useEffect(() => {
-    // Check if Supabase is configured
-    if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
-      console.log('Supabase not configured, using mock auth');
-      setIsLoading(false);
-      return;
-    }
+    const initializeAuth = async () => {
+      if (isMockMode) {
+        console.log('Running in mock mode - Supabase not configured');
+        setIsLoading(false);
+        return;
+      }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const customUser: CustomUser = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || 'User',
-          role: 'customer',
-          createdAt: session.user.created_at,
-        };
-        setUser(customUser);
-        fetchProfile(session.user.id);
-      } else {
-        setUser(null);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          await handleAuthenticatedUser(session.user);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
         setIsLoading(false);
       }
-    });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
-          const customUser: CustomUser = {
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name || 'User',
-            role: 'customer',
-            createdAt: session.user.created_at,
-          };
-          setUser(customUser);
-          await fetchProfile(session.user.id);
+          await handleAuthenticatedUser(session.user);
         } else {
           setUser(null);
           setProfile(null);
-          setIsLoading(false);
         }
       });
 
-    return () => subscription.unsubscribe();
-  }, []);
+      return () => subscription.unsubscribe();
+    };
+
+    initializeAuth();
+  }, [isMockMode]);
+
+  const handleAuthenticatedUser = async (user: any) => {
+    const customUser: CustomUser = {
+      id: user.id,
+      email: user.email || '',
+      name: user.user_metadata?.name || 'User',
+      role: 'customer',
+      createdAt: user.created_at,
+    };
+    setUser(customUser);
+    await fetchProfile(user.id);
+  };
 
   const fetchProfile = async (userId: string) => {
+    setIsLoading(true);
     try {
-      if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
-        // Mock profile for development
+      if (isMockMode) {
         const mockProfile: Profile = {
           id: userId,
-          email: 'user@example.com',
-          name: 'Test User',
-          role: 'customer',
+          email: user?.email || 'user@example.com',
+          name: user?.name || 'Mock User',
+          role: user?.email === 'admin@farm.com' ? 'admin' : 'customer',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -111,155 +110,121 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
+      if (error) throw error;
       setProfile(data);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Profile fetch error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
-        // Mock login for development
-        if (email === 'admin@farm.com' && password === 'admin123') {
-          const mockUser: CustomUser = {
-            id: 'admin-user-id',
-            email: 'admin@farm.com',
-            name: 'Admin User',
-            role: 'admin',
-            createdAt: new Date().toISOString(),
-          };
-          
-          setUser(mockUser);
-          const mockProfile: Profile = {
-            id: 'admin-user-id',
-            email: 'admin@farm.com',
-            name: 'Admin User',
-            role: 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          setProfile(mockProfile);
-          return { success: true };
-        } else if (email && password) {
-          const mockUser: CustomUser = {
-            id: 'customer-user-id',
-            email: email,
-            name: 'Customer User',
-            role: 'customer',
-            createdAt: new Date().toISOString(),
-          };
-          
-          setUser(mockUser);
-          const mockProfile: Profile = {
-            id: 'customer-user-id',
-            email: email,
-            name: 'Customer User',
-            role: 'customer',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          setProfile(mockProfile);
-          return { success: true };
+      // Mock authentication
+      if (isMockMode) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+        
+        if (!email || !password) {
+          throw new Error('Email and password are required');
         }
-        return { success: false, error: 'Invalid credentials' };
+
+        const mockUser: CustomUser = {
+          id: `mock-${Math.random().toString(36).substr(2, 9)}`,
+          email,
+          name: email.split('@')[0] || 'User',
+          role: email === 'admin@farm.com' ? 'admin' : 'customer',
+          createdAt: new Date().toISOString(),
+        };
+
+        const mockProfile: Profile = {
+          ...mockUser,
+          created_at: mockUser.createdAt,
+          updated_at: mockUser.createdAt,
+        };
+
+        setUser(mockUser);
+        setProfile(mockProfile);
+        return { success: true };
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
+      // Real authentication
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       return { success: true };
-    } catch (error) {
-      return { success: false, error: 'An unexpected error occurred' };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.message || 'Login failed. Please try again.' 
+      };
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const register = async (email: string, password: string, name: string) => {
+    setIsLoading(true);
     try {
-      if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
-        // Mock registration for development
+      if (isMockMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const mockUser: CustomUser = {
-          id: 'new-user-id',
-          email: email,
-          name: name,
+          id: `mock-${Math.random().toString(36).substr(2, 9)}`,
+          email,
+          name,
           role: 'customer',
           createdAt: new Date().toISOString(),
         };
-        
-        setUser(mockUser);
+
         const mockProfile: Profile = {
-          id: 'new-user-id',
-          email: email,
-          name: name,
-          role: 'customer',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          ...mockUser,
+          created_at: mockUser.createdAt,
+          updated_at: mockUser.createdAt,
         };
+
+        setUser(mockUser);
         setProfile(mockProfile);
-        
         return { success: true };
       }
 
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            name: name,
-          },
-        },
+        options: { data: { name } }
       });
 
-      if (error) {
-        return { success: false, error: error.message };
-      }
+      if (error) throw error;
 
-      // Create profile in database
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email: email,
-              name: name,
-              role: 'customer',
-            },
-          ]);
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-        }
+        await supabase.from('profiles').insert([{
+          id: data.user.id,
+          email,
+          name,
+          role: 'customer'
+        }]);
       }
 
       return { success: true };
-    } catch (error) {
-      return { success: false, error: 'An unexpected error occurred' };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.message || 'Registration failed. Please try again.' 
+      };
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      if (process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY) {
+      if (!isMockMode) {
         await supabase.auth.signOut();
       }
       setUser(null);
       setProfile(null);
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error('Logout error:', error);
     }
   };
 
@@ -270,6 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile,
         isAuthenticated: !!user,
         isLoading,
+        isMockMode,
         login,
         register,
         logout,

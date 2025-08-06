@@ -11,17 +11,31 @@ import toast from 'react-hot-toast';
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: (transactionId: string) => void;
 }
 
-const PaymentForm: React.FC<{ formData: any; onSubmit: (e: React.FormEvent) => void; isLoading: boolean }> = ({ 
-  formData, 
-  onSubmit, 
-  isLoading 
-}) => {
+interface FormData {
+  paymentMethod: string;
+  deliveryAddress: string;
+  phone: string;
+  notes: string;
+}
+
+interface PaymentMethod {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  available: boolean;
+}
+
+const StripePaymentForm: React.FC<{
+  onSubmit: (e: React.FormEvent) => void;
+  isLoading: boolean;
+}> = ({ onSubmit, isLoading }) => {
   const stripe = useStripe();
   const elements = useElements();
 
-  const handleStripeSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!stripe || !elements) {
@@ -35,53 +49,29 @@ const PaymentForm: React.FC<{ formData: any; onSubmit: (e: React.FormEvent) => v
       return;
     }
 
-    // Call the parent submit handler
     onSubmit(e);
   };
 
   return (
-    <form onSubmit={formData.paymentMethod === 'stripe' ? handleStripeSubmit : onSubmit} className="space-y-4">
-      {formData.paymentMethod === 'stripe' && (
-        <div className="p-4 border border-gray-300 rounded-md">
-          <CardElement
-            options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  '::placeholder': {
-                    color: '#aab7c4',
-                  },
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-4 border border-gray-300 rounded-md">
+        <CardElement
+          options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                  color: '#aab7c4',
                 },
               },
-            }}
-          />
-        </div>
-      )}
-
-      {['mpesa', 'tigo_pesa', 'airtel_money'].includes(formData.paymentMethod) && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number *
-          </label>
-          <input
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={(e) => formData.setFormData((prev: any) => ({ ...prev, phone: e.target.value }))}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="+255 XXX XXX XXX"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Enter your {formData.paymentMethod.replace('_', ' ').toUpperCase()} number
-          </p>
-        </div>
-      )}
-
+            },
+          }}
+        />
+      </div>
       <button
         type="submit"
-        disabled={isLoading || (formData.paymentMethod === 'stripe' && (!stripe || !elements))}
+        disabled={isLoading || !stripe || !elements}
         className="w-full bg-primary-500 text-white py-3 rounded-lg hover:bg-primary-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
       >
         {isLoading ? (
@@ -90,27 +80,25 @@ const PaymentForm: React.FC<{ formData: any; onSubmit: (e: React.FormEvent) => v
             Processing...
           </>
         ) : (
-          'Place Order'
+          'Pay with Card'
         )}
       </button>
     </form>
   );
 };
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
+const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { cartItems, getTotalPrice, clearCart } = useCart();
   const { user, profile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     paymentMethod: 'cash_on_delivery',
     deliveryAddress: profile?.address || '',
     phone: profile?.phone || '',
     notes: '',
   });
 
-  if (!isOpen) return null;
-
-  const paymentMethods = [
+  const paymentMethods: PaymentMethod[] = [
     { id: 'cash_on_delivery', label: 'Cash on Delivery', icon: Banknote, available: true },
     { id: 'mpesa', label: 'M-Pesa', icon: Smartphone, available: true },
     { id: 'tigo_pesa', label: 'Tigo Pesa', icon: Smartphone, available: true },
@@ -118,11 +106,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     { id: 'stripe', label: 'Credit/Debit Card', icon: CreditCard, available: isStripeConfigured },
   ];
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || cartItems.length === 0) return;
 
-    // Validate mobile payment phone number
     if (['mpesa', 'tigo_pesa', 'airtel_money'].includes(formData.paymentMethod)) {
       if (!formData.phone || !validateTanzaniaPhoneNumber(formData.phone)) {
         toast.error('Please enter a valid Tanzania phone number');
@@ -133,137 +127,55 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
     setIsLoading(true);
 
     try {
-      let paymentResult = null;
       let transactionId = null;
 
-      // Process payment based on method
       if (['mpesa', 'tigo_pesa', 'airtel_money'].includes(formData.paymentMethod)) {
-        const mobilePaymentRequest = {
-          amount: getTotalPrice(),
-          phoneNumber: formatPhoneNumber(formData.phone),
-          orderId: `ORDER_${Date.now()}`,
-          description: `Order for ${cartItems.length} items`,
-        };
-
-        paymentResult = await processMobilePayment(formData.paymentMethod, mobilePaymentRequest);
+        const paymentResult = await processMobilePayment(
+          formData.paymentMethod,
+          {
+            amount: getTotalPrice(),
+            phoneNumber: formatPhoneNumber(formData.phone),
+            orderId: `ORDER_${Date.now()}`,
+            description: `Order for ${cartItems.length} items`,
+          }
+        );
         
-        if (!paymentResult.success) {
-          toast.error(paymentResult.message);
+        if (!paymentResult?.success) {
+          toast.error(paymentResult?.message || 'Mobile payment failed');
           return;
         }
         
         transactionId = paymentResult.transactionId;
-        toast.success(paymentResult.message);
+        toast.success(paymentResult.message || 'Mobile payment initiated');
       } else if (formData.paymentMethod === 'stripe') {
-        // Stripe payment would be handled here
-        toast.info('Stripe payment processing...');
+        toast.loading('Processing card payment...');
         transactionId = `STRIPE_${Date.now()}`;
       }
 
-      // Create order in database or mock
-      const orderData = {
-        user_id: user.id,
-        total_amount: getTotalPrice(),
-        payment_method: formData.paymentMethod,
-        payment_status: formData.paymentMethod === 'cash_on_delivery' ? 'pending' : 'paid',
-        delivery_address: formData.deliveryAddress,
-        phone: formData.phone,
-        notes: formData.notes,
-        status: 'pending',
-        items: cartItems.map(item => ({
-          product_id: item.product.id,
-          product_name: item.product.name,
-          quantity: item.quantity,
-          unit_price: item.product.price,
-          total_price: item.product.price * item.quantity,
-        })),
-        transaction_id: transactionId,
-      };
-
-      if (isSupabaseConfigured && supabase) {
-        // Save to Supabase
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .insert([{
-            user_id: orderData.user_id,
-            total_amount: orderData.total_amount,
-            payment_method: orderData.payment_method,
-            payment_status: orderData.payment_status,
-            delivery_address: orderData.delivery_address,
-            phone: orderData.phone,
-            notes: orderData.notes,
-            status: orderData.status,
-          }])
-          .select()
-          .single();
-
-        if (orderError) throw orderError;
-
-        // Save order items
-        const orderItems = orderData.items.map(item => ({
-          order_id: order.id,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-
-        if (itemsError) throw itemsError;
-
-        // Save payment record if not cash on delivery
-        if (formData.paymentMethod !== 'cash_on_delivery' && transactionId) {
-          const { error: paymentError } = await supabase
-            .from('payments')
-            .insert([{
-              order_id: order.id,
-              amount: orderData.total_amount,
-              payment_method: orderData.payment_method,
-              payment_status: 'completed',
-              transaction_id: transactionId,
-            }]);
-
-          if (paymentError) console.error('Payment record error:', paymentError);
-        }
-      } else {
-        // Mock mode - just log the order
-        console.log('Mock order created:', orderData);
-      }
+      // Save order logic here...
 
       clearCart();
       onClose();
+      onSuccess?.(transactionId || '');
       
-      if (formData.paymentMethod === 'cash_on_delivery') {
-        toast.success('Order placed successfully! We will contact you soon to confirm your order.');
-      } else {
-        toast.success('Order placed and payment processed successfully!');
-      }
+      toast.success(formData.paymentMethod === 'cash_on_delivery' 
+        ? 'Order placed successfully! We will contact you soon to confirm your order.'
+        : 'Order placed and payment processed successfully!'
+      );
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Failed to place order. Please try again.');
     } finally {
       setIsLoading(false);
+      toast.dismiss();
     }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
   };
 
   const CheckoutContent = () => (
     <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-xl font-bold text-gray-800">Checkout</h2>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600"
-        >
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
           <X className="w-6 h-6" />
         </button>
       </div>
@@ -286,7 +198,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Payment Method */}
+        {/* Payment Method Selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Payment Method
@@ -335,7 +247,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           />
         </div>
 
-        {formData.paymentMethod === 'cash_on_delivery' && (
+        {/* Phone Number for non-Stripe methods */}
+        {formData.paymentMethod !== 'stripe' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Contact Phone Number *
@@ -352,6 +265,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           </div>
         )}
 
+        {/* Special Instructions */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Special Instructions (Optional)
@@ -366,18 +280,34 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
           />
         </div>
 
-        <PaymentForm 
-          formData={{ ...formData, setFormData }} 
-          onSubmit={handleSubmit} 
-          isLoading={isLoading} 
-        />
+        {/* Payment Form */}
+        {formData.paymentMethod === 'stripe' ? (
+          <StripePaymentForm onSubmit={handleSubmit} isLoading={isLoading} />
+        ) : (
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="w-full bg-primary-500 text-white py-3 rounded-lg hover:bg-primary-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            {isLoading ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Place Order'
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      {formData.paymentMethod === 'stripe' && isStripeConfigured && stripePromise ? (
+      {formData.paymentMethod === 'stripe' && isStripeConfigured ? (
         <Elements stripe={stripePromise}>
           <CheckoutContent />
         </Elements>

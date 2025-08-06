@@ -1,104 +1,46 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { validateEmail } from '../utils/validation';
-import LoadingSpinner from './LoadingSpinner';
 
 interface LoginPageProps {
+  onLogin: (email: string, password: string) => Promise<void>;
   onSwitchToRegister: () => void;
   onClose: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+const LoginPage: React.FC<LoginPageProps> = ({ 
+  onLogin, 
+  onSwitchToRegister, 
+  onClose 
+}) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const { login, isMockMode } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!validateEmail(formData.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    if (!formData.password) {
-      setError('Please enter your password');
-      return;
-    }
-
     setIsSubmitting(true);
-
     try {
-      const result = await login(formData.email, formData.password);
-      
-      if (!result.success) {
-        setError(result.error || 'Login failed. Please try again.');
-        return;
-      }
-
-      onClose();
-    } catch (error) {
-      setError('An unexpected error occurred');
+      await onLogin(email, password);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
   return (
-    <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-xl">
-      <div className="text-center mb-6">
-        <LogIn className="w-12 h-12 text-primary-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
-        <p className="text-gray-600">Sign in to your account</p>
-      </div>
-
-      {isMockMode && (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-md mb-4 text-sm">
-          <p className="font-medium">Demo Mode Active</p>
-          <p className="mt-1">Try these credentials:</p>
-          <ul className="list-disc pl-5 mt-1">
-            <li>Admin: admin@farm.com / admin123</li>
-            <li>Any email/password will work for customer</li>
-          </ul>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
-          {error}
-        </div>
-      )}
-
+    <div className="p-6 w-full">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Login to Your Account</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Email Address
           </label>
           <input
-            id="email"
             type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="your@email.com"
-            autoComplete="username"
+            required
           />
         </div>
 
@@ -106,55 +48,64 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             Password
           </label>
-          <div className="relative">
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
             <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="Enter your password"
-              autoComplete="current-password"
+              id="remember-me"
+              name="remember-me"
+              type="checkbox"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              Remember me
+            </label>
+          </div>
+
+          <div className="text-sm">
+            <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+              Forgot password?
+            </a>
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-primary-500 text-white py-2 px-4 rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isSubmitting ? (
-            <>
-              <LoadingSpinner size="sm" />
-              <span>Signing In...</span>
-            </>
-          ) : (
-            'Sign In'
-          )}
-        </button>
+        <div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Signing in...
+              </>
+            ) : 'Sign in'}
+          </button>
+        </div>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-gray-600">
-          Don't have an account?{' '}
-          <button
-            onClick={onSwitchToRegister}
-            className="text-primary-500 hover:text-primary-600 font-medium focus:outline-none"
-          >
-            Sign up
-          </button>
-        </p>
+      <div className="mt-4 text-center text-sm text-gray-600">
+        Don't have an account?{' '}
+        <button
+          onClick={onSwitchToRegister}
+          className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none"
+        >
+          Register here
+        </button>
       </div>
     </div>
   );

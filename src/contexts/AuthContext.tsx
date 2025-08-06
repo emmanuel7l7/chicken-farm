@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured, handleSupabaseError } from '../lib/supabase';
-import { User as CustomUser } from '../types/User';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface Profile {
@@ -14,14 +13,22 @@ interface Profile {
   updated_at: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'customer' | 'admin';
+  createdAt: string;
+}
+
 interface AuthContextType {
-  user: CustomUser | null;
+  user: User | null;
   profile: Profile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  isMockMode: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, name: string, isAdmin?: boolean) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ success: boolean; error?: string }>;
 }
@@ -37,28 +44,23 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<CustomUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMockMode] = useState(!isSupabaseConfigured);
+  const isAdmin = profile?.role === 'admin';
 
   // Initialize auth state
   useEffect(() => {
-    const initializeAuth = async () => {
-      if (isMockMode) {
-        console.log('Running in mock mode - Supabase not configured');
-        setIsLoading(false);
-        return;
-      }
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
 
+    const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase!.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('Session error:', error);
-          setIsLoading(false);
-          return;
-        }
+        if (error) throw error;
         
         if (session?.user) {
           await handleAuthenticatedUser(session.user);
@@ -70,12 +72,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Listen for auth changes
-      const { data: { subscription } } = supabase!.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        
-        if (session?.user) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
           await handleAuthenticatedUser(session.user);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setProfile(null);
         }
@@ -85,15 +85,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initializeAuth();
-  }, [isMockMode]);
+  }, []);
 
   const handleAuthenticatedUser = async (authUser: any) => {
     try {
-      const customUser: CustomUser = {
+      // Check if email is verified
+      if (!authUser.email_confirmed_at) {
+        toast.error('Please verify your email first');
+        await supabase.auth.signOut();
+        return;
+      }
+
+      const customUser: User = {
         id: authUser.id,
         email: authUser.email || '',
         name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-        role: 'customer',
+        role: 'customer', // Default role
         createdAt: authUser.created_at,
       };
       
@@ -106,51 +113,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      if (isMockMode) {
-        const mockProfile: Profile = {
-          id: userId,
-          email: user?.email || 'user@example.com',
-          name: user?.name || 'Mock User',
-          role: user?.email === 'admin@farm.com' ? 'admin' : 'customer',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        setProfile(mockProfile);
-        return;
-      }
-
-      const { data, error } = await supabase!
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Profile doesn't exist, create one
-          const newProfile = {
-            id: userId,
-            email: user?.email || '',
-            name: user?.name || 'User',
-            role: 'customer' as const,
-          };
+      if (existingProfile) {
+        setProfile(existingProfile);
+        return;
+      }
 
-          const { data: createdProfile, error: createError } = await supabase!
-            .from('profiles')
-            .insert([newProfile])
-            .select()
-            .single();
-
-          if (createError) {
-            throw createError;
-          }
-
-          setProfile(createdProfile);
-        } else {
-          throw error;
-        }
-      } else {
-        setProfile(data);
+      // If no profile exists (only create after email verification)
+      if (fetchError?.code === 'PGRST116') {
+        toast.error('Please verify your email first');
+        await supabase.auth.signOut();
       }
     } catch (error) {
       console.error('Profile fetch error:', error);
@@ -161,36 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock authentication
-      if (isMockMode) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (!email || !password) {
-          throw new Error('Email and password are required');
-        }
-
-        const mockUser: CustomUser = {
-          id: `mock-${Math.random().toString(36).substr(2, 9)}`,
-          email,
-          name: email.split('@')[0] || 'User',
-          role: email === 'admin@farm.com' ? 'admin' : 'customer',
-          createdAt: new Date().toISOString(),
-        };
-
-        const mockProfile: Profile = {
-          ...mockUser,
-          created_at: mockUser.createdAt,
-          updated_at: mockUser.createdAt,
-        };
-
-        setUser(mockUser);
-        setProfile(mockProfile);
-        toast.success('Logged in successfully!');
-        return { success: true };
-      }
-
-      // Real authentication
-      const { data, error } = await supabase!.auth.signInWithPassword({ 
+      const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password 
       });
@@ -198,13 +146,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       if (data.user) {
+        // Check email verification
+        if (!data.user.email_confirmed_at) {
+          await supabase.auth.signOut();
+          throw new Error('Please verify your email first');
+        }
+
         toast.success('Logged in successfully!');
         return { success: true };
       }
       
       throw new Error('Login failed');
     } catch (error: any) {
-      const errorMessage = handleSupabaseError(error);
+      const errorMessage = error.message || 'Login failed';
       toast.error(errorMessage);
       return { 
         success: false, 
@@ -215,56 +169,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, isAdmin: boolean = false) => {
     setIsLoading(true);
     try {
-      if (isMockMode) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockUser: CustomUser = {
-          id: `mock-${Math.random().toString(36).substr(2, 9)}`,
-          email,
-          name,
-          role: 'customer',
-          createdAt: new Date().toISOString(),
-        };
-
-        const mockProfile: Profile = {
-          ...mockUser,
-          created_at: mockUser.createdAt,
-          updated_at: mockUser.createdAt,
-        };
-
-        setUser(mockUser);
-        setProfile(mockProfile);
-        toast.success('Account created successfully!');
-        return { success: true };
-      }
-
-      const { data, error } = await supabase!.auth.signUp({
+      // First register the user
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { 
+        options: {
           data: { name },
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
 
       if (error) throw error;
 
       if (data.user) {
-        // Profile will be created automatically via database trigger or in fetchProfile
-        toast.success('Account created successfully!');
+        // Only create profile after email verification
+        // This will be handled by the email confirmation callback
+        toast.success('Account created! Please check your email to verify your account.');
+
+        // If this is an admin registration (should be protected)
+        if (isAdmin) {
+          // Create admin profile immediately (protected by backend)
+          const { error: adminError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              email,
+              name,
+              role: 'admin'
+            });
+
+          if (adminError) throw adminError;
+        }
+
         return { success: true };
       }
       
       throw new Error('Registration failed');
     } catch (error: any) {
-      const errorMessage = handleSupabaseError(error);
+      const errorMessage = error.message || 'Registration failed';
       toast.error(errorMessage);
       return { 
         success: false, 
-        error: errorMessage
+        error: errorMessage 
       };
     } finally {
       setIsLoading(false);
@@ -273,10 +222,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      if (!isMockMode) {
-        const { error } = await supabase!.auth.signOut();
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       
       setUser(null);
       setProfile(null);
@@ -293,13 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      if (isMockMode) {
-        setProfile(prev => prev ? { ...prev, ...updates } : null);
-        toast.success('Profile updated successfully!');
-        return { success: true };
-      }
-
-      const { data, error } = await supabase!
+      const { data, error } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', user.id)
@@ -312,7 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Profile updated successfully!');
       return { success: true };
     } catch (error: any) {
-      const errorMessage = handleSupabaseError(error);
+      const errorMessage = error.message || 'Failed to update profile';
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
@@ -325,7 +266,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile,
         isAuthenticated: !!user,
         isLoading,
-        isMockMode,
+        isAdmin,
         login,
         register,
         logout,

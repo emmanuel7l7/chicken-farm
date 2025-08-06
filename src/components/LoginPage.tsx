@@ -26,8 +26,36 @@ const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   return (
+<<<<<<< HEAD
     <div className="p-6 w-full">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Login to Your Account</h2>
+=======
+    <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-xl">
+      <div className="text-center mb-6">
+        <LogIn className="w-12 h-12 text-primary-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
+        <p className="text-gray-600">Sign in to your account</p>
+      </div>
+
+      {isMockMode && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-md mb-4 text-sm">
+          <p className="font-medium">Demo Mode Active</p>
+          <p className="mt-1">Try these credentials:</p>
+          <ul className="list-disc pl-5 mt-1">
+            <li>Admin: admin@farm.com / admin123</li>
+            <li>Admin: emmanuelmbuli7@gmail.com / admin123</li>
+            <li>Any email/password will work for customer</li>
+          </ul>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
+          {error}
+        </div>
+      )}
+
+>>>>>>> 1fea4be2c16b34ab7fb499b9f80924cee890be64
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">

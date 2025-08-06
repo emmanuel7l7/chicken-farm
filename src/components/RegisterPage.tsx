@@ -1,4 +1,11 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
+=======
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { validateEmail, validatePassword, validatePhone } from '../utils/validation';
+import LoadingSpinner from './LoadingSpinner';
+>>>>>>> 1fea4be2c16b34ab7fb499b9f80924cee890be64
 
 interface RegisterPageProps {
   onRegister: (email: string, password: string, name: string) => Promise<void>;
@@ -6,6 +13,7 @@ interface RegisterPageProps {
   onClose: () => void;
 }
 
+<<<<<<< HEAD
 const RegisterPage: React.FC<RegisterPageProps> = ({ 
   onRegister, 
   onSwitchToLogin, 
@@ -17,6 +25,22 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+=======
+const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onClose }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { register } = useAuth();
+>>>>>>> 1fea4be2c16b34ab7fb499b9f80924cee890be64
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +50,43 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
       return;
     }
 
+<<<<<<< HEAD
     setIsSubmitting(true);
     setPasswordError('');
     
     try {
       await onRegister(email, password, name);
+=======
+    if (formData.phone && !validatePhone(formData.phone)) {
+      setError('Please enter a valid Tanzania phone number (e.g., +255712345678 or 0712345678)');
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.errors[0]);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await register(formData.email, formData.password, formData.name, formData.phone);
+      if (result.success) {
+        // Don't close modal immediately - show success message
+        setTimeout(() => {
+          onClose();
+        }, 3000);
+      } else {
+        setError(result.error || 'Registration failed');
+      }
+    } catch (error) {
+      setError('An error occurred. Please try again.');
+>>>>>>> 1fea4be2c16b34ab7fb499b9f80924cee890be64
     } finally {
       setIsSubmitting(false);
     }
@@ -71,7 +127,27 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
         </div>
 
         <div>
+<<<<<<< HEAD
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+=======
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Phone Number (Optional)
+          </label>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="+255712345678 or 0712345678"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            We'll use this to send you order updates and notifications
+          </p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+>>>>>>> 1fea4be2c16b34ab7fb499b9f80924cee890be64
             Password
           </label>
           <input

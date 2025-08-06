@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { validateEmail, validatePassword } from '../utils/validation';
+import { validateEmail, validatePassword, validatePhone } from '../utils/validation';
 import LoadingSpinner from './LoadingSpinner';
 
 interface RegisterPageProps {
@@ -13,6 +13,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onClose })
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -32,6 +33,10 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onClose })
       return;
     }
 
+    if (formData.phone && !validatePhone(formData.phone)) {
+      setError('Please enter a valid Tanzania phone number (e.g., +255712345678 or 0712345678)');
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -46,9 +51,12 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onClose })
     setIsLoading(true);
 
     try {
-      const result = await register(formData.email, formData.password, formData.name);
+      const result = await register(formData.email, formData.password, formData.name, formData.phone);
       if (result.success) {
-        onClose();
+        // Don't close modal immediately - show success message
+        setTimeout(() => {
+          onClose();
+        }, 3000);
       } else {
         setError(result.error || 'Registration failed');
       }
@@ -111,6 +119,22 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onClose })
           />
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Phone Number (Optional)
+          </label>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="+255712345678 or 0712345678"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            We'll use this to send you order updates and notifications
+          </p>
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Password

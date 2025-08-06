@@ -73,6 +73,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onClose }) =>
           <p className="mt-1">Try these credentials:</p>
           <ul className="list-disc pl-5 mt-1">
             <li>Admin: admin@farm.com / admin123</li>
+            <li>Admin: emmanuelmbuli7@gmail.com / admin123</li>
             <li>Any email/password will work for customer</li>
           </ul>
         </div>

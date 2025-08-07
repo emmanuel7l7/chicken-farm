@@ -1,35 +1,40 @@
 import React, { useState } from 'react';
+import { LogIn } from 'lucide-react';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => Promise<void>;
+  onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   onSwitchToRegister: () => void;
   onClose: () => void;
+  isMockMode: boolean;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ 
   onLogin, 
   onSwitchToRegister, 
-  onClose 
+  onClose,
+  isMockMode
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
+    
     try {
-      await onLogin(email, password);
+      const result = await onLogin(email, password);
+      if (!result.success) {
+        setError(result.error || 'Login failed');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-<<<<<<< HEAD
-    <div className="p-6 w-full">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Login to Your Account</h2>
-=======
     <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-xl">
       <div className="text-center mb-6">
         <LogIn className="w-12 h-12 text-primary-500 mx-auto mb-4" />
@@ -55,7 +60,6 @@ const LoginPage: React.FC<LoginPageProps> = ({
         </div>
       )}
 
->>>>>>> 1fea4be2c16b34ab7fb499b9f80924cee890be64
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">

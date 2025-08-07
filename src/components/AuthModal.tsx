@@ -3,24 +3,13 @@ import { X } from 'lucide-react';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
 import { useAuth } from '../contexts/AuthContext';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'register';
   onAuthSuccess?: () => void;
-}
-
-interface LoginPageProps {
-  onLogin: (email: string, password: string) => Promise<void>;
-  onSwitchToRegister: () => void;
-  onClose: () => void;
-}
-
-interface RegisterPageProps {
-  onRegister: (email: string, password: string, name: string) => Promise<void>;
-  onSwitchToLogin: () => void;
-  onClose: () => void;
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ 
@@ -38,25 +27,44 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setMode(initialMode);
   }, [isOpen, initialMode]);
 
-  const handleLogin = async (email: string, password: string) => {
+  const handleLogin = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setAuthError(null);
-    const { success, error } = await login(email, password);
-    if (success) {
-      onClose();
-      onAuthSuccess?.();
-    } else {
-      setAuthError(error || 'Login failed');
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        onClose();
+        onAuthSuccess?.();
+      } else {
+        setAuthError(result.error || 'Login failed');
+      }
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setAuthError(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
-  const handleRegister = async (email: string, password: string, name: string) => {
+  const handleRegister = async (
+    email: string, 
+    password: string, 
+    name: string, 
+    phone?: string
+  ): Promise<{ success: boolean; error?: string }> => {
     setAuthError(null);
-    const { success, error } = await register(email, password, name);
-    if (success) {
-      setAuthError('Please check your email to verify your account');
-      setMode('login');
-    } else {
-      setAuthError(error || 'Registration failed');
+    try {
+      const result = await register(email, password, name, phone);
+      if (result.success) {
+        setAuthError('Please check your email to verify your account');
+        setMode('login');
+      } else {
+        setAuthError(result.error || 'Registration failed');
+      }
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      setAuthError(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -87,6 +95,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               setMode('register');
             }}
             onClose={onClose}
+            isMockMode={!isSupabaseConfigured}
           />
         ) : (
           <RegisterPage
@@ -96,6 +105,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               setMode('login');
             }}
             onClose={onClose}
+            isMockMode={!isSupabaseConfigured}
           />
         )}
       </div>

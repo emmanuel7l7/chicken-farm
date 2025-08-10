@@ -112,7 +112,7 @@ export const processMobilePayment = async (
 // Validate Tanzania phone number
 export const validateTanzaniaPhoneNumber = (phoneNumber: string): boolean => {
   // Remove spaces and special characters
-  const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+  const cleanNumber = phoneNumber.replace(/[()\s-]/g, '');
   
   // Check for valid Tanzania phone number formats
   const patterns = [
@@ -125,7 +125,7 @@ export const validateTanzaniaPhoneNumber = (phoneNumber: string): boolean => {
 
 // Format phone number for API calls
 export const formatPhoneNumber = (phoneNumber: string): string => {
-  const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+  const cleanNumber = phoneNumber.replace(/[()\s-]/g, '');
   
   // Convert to international format
   if (cleanNumber.startsWith('0')) {

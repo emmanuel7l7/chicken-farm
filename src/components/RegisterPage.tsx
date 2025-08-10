@@ -196,7 +196,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
             required
           />
           <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-            I agree to the <a href="#" className="text-blue-600 hover:text-blue-500">Terms and Conditions</a>
+            I agree to the <button type="button" className="text-blue-600 hover:text-blue-500">Terms and Conditions</button>
           </label>
         </div>
 

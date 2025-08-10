@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, Banknote, Loader } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { processMobilePayment, validateTanzaniaPhoneNumber, formatPhoneNumber } from '../lib/mobilePayments';
 import { stripePromise, isStripeConfigured } from '../lib/stripe';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';

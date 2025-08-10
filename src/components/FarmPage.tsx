@@ -6,11 +6,10 @@ import { useCart } from '../contexts/CartContext';
 
 interface FarmPageProps {
   products: Product[];
-  onShowAuth: () => void;
   onShowCart: () => void;
 }
 
-const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth, onShowCart }) => {
+const FarmPage: React.FC<FarmPageProps> = ({ products, onShowCart }) => {
   const [activeCategory, setActiveCategory] = useState('layers');
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();

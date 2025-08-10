@@ -91,22 +91,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel }
     }
   };
 
-  const getDefaultImage = () => {
-    switch (formData.category) {
-      case 'layers':
-        return 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg';
-      case 'broilers':
-        return 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg';
-      case 'chicks':
-        return 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg';
-      case 'eggs':
-        return 'https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg';
-      case 'meat':
-        return 'https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg';
-      default:
-        return 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg';
-    }
-  };
+  // Removed unused getDefaultImage to satisfy linter
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

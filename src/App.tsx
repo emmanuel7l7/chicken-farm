@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { Toaster } from 'react-hot-toast';
 import Sidebar from "./components/Sidebar";
-import { Menu, User, LogIn, ShoppingCart } from "lucide-react";
+import { Menu, User, ShoppingCart } from "lucide-react";
 import FarmPage from "./components/FarmPage";
 import AboutPage from "./components/AboutPage";
 import ContactPage from "./components/ContactPage";
@@ -20,10 +20,10 @@ import LoadingSpinner from "./components/LoadingSpinner";
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('farm');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode] = useState<'login' | 'register'>('login');
   const { user, profile, isAuthenticated, logout, isLoading } = useAuth();
   const { getTotalItems } = useCart();
 
@@ -80,10 +80,7 @@ const AppContent: React.FC = () => {
     },
   ]);
 
-  const handleShowAuth = (mode: 'login' | 'register' = 'login') => {
-    setAuthMode(mode);
-    setAuthModalOpen(true);
-  };
+  // Removed unused handleShowAuth function
 
   // Show loading spinner while auth is initializing
   if (isLoading) {
@@ -124,7 +121,7 @@ const AppContent: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'farm':
-        return <FarmPage products={products} onShowAuth={() => {}} onShowCart={() => setCartOpen(true)} />;
+        return <FarmPage products={products} onShowCart={() => setCartOpen(true)} />;
       case 'about':
         return <AboutPage />;
       case 'contact':
@@ -150,7 +147,7 @@ const AppContent: React.FC = () => {
         }
         return <Dashboard products={products} setProducts={setProducts} />;
       default:
-        return <FarmPage products={products} onShowAuth={() => {}} onShowCart={() => setCartOpen(true)} />;
+        return <FarmPage products={products} onShowCart={() => setCartOpen(true)} />;
     }
   };
 

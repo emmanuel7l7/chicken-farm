@@ -75,12 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onViewC
           }`}
         >
           <ShoppingCart className="w-4 h-4 mr-2" />
-          {!product.isActive 
-            ? 'Out of Stock'
-            : isAuthenticated 
-              ? 'Add to Cart' 
-              : 'Login to Buy'
-          }
+          {!product.isActive ? 'Out of Stock' : 'Add to Cart'}
         </button>
       </div>
     </div>

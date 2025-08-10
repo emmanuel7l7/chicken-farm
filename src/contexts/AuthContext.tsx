@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      const { data: existingProfile, error: fetchError } = await supabase
+      const { data: existingProfile, error: fetchError } = await supabase!
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -136,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
           // Profile doesn't exist, create one using auth user data
-          const authUser = await supabase.auth.getUser();
+          const authUser = await supabase!.auth.getUser();
           const userEmail = authUser.data.user?.email || '';
           const userName = authUser.data.user?.user_metadata?.name || userEmail.split('@')[0] || 'User';
           const userPhone = authUser.data.user?.user_metadata?.phone;
@@ -152,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             phone: userPhone,
           };
 
-          const { data: createdProfile, error: createError } = await supabase
+          const { data: createdProfile, error: createError } = await supabase!
             .from('profiles')
             .insert([newProfile])
             .select()
@@ -169,7 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (existingProfile) {
         // Update existing profile to admin if it's the admin email
         if ((existingProfile.email === 'emmanuelmbuli7@gmail.com' || existingProfile.email === 'admin@farm.com') && existingProfile.role !== 'admin') {
-          const { data: updatedProfile, error: updateError } = await supabase
+          const { data: updatedProfile, error: updateError } = await supabase!
             .from('profiles')
             .update({ role: 'admin' })
             .eq('id', userId)
@@ -226,7 +226,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Real authentication
-      const { data, error } = await supabase.auth.signInWithPassword({ 
+      const { data, error } = await supabase!.auth.signInWithPassword({ 
         email, 
         password 
       });
@@ -291,7 +291,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true };
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase!.auth.signUp({
         email,
         password,
         options: {
@@ -331,7 +331,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      if (isMockMode) {
+        // Mock logout
+        setUser(null);
+        setProfile(null);
+        toast.success('Logged out successfully');
+        return;
+      }
+
+      const { error } = await supabase!.auth.signOut();
       if (error) throw error;
       
       setUser(null);
@@ -348,8 +356,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Not authenticated' };
     }
 
+    if (isMockMode) {
+      // Mock profile update
+      if (profile) {
+        const updatedProfile = { ...profile, ...updates };
+        setProfile(updatedProfile);
+        toast.success('Profile updated successfully!');
+        return { success: true };
+      }
+      return { success: false, error: 'No profile found' };
+    }
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('profiles')
         .update(updates)
         .eq('id', user.id)

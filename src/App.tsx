@@ -15,6 +15,7 @@ import Dashboard from "./components/Dashboard";
 import AuthModal from "./components/AuthModal";
 import { useCart } from "./contexts/CartContext";
 import { Product } from "./types/Product";
+import LoadingSpinner from "./components/LoadingSpinner";
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('farm');
@@ -23,7 +24,7 @@ const AppContent: React.FC = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const { user, profile, isAuthenticated, logout } = useAuth();
+  const { user, profile, isAuthenticated, logout, isLoading } = useAuth();
   const { getTotalItems } = useCart();
 
   const [products, setProducts] = useState<Product[]>([
@@ -84,12 +85,34 @@ const AppContent: React.FC = () => {
     setAuthModalOpen(true);
   };
 
+  // Show loading spinner while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="lg" className="mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth modal if user is not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <AuthModal
+          isOpen={true}
+          onClose={() => {}} // Don't allow closing when not authenticated
+          initialMode={authMode}
+          onAuthSuccess={() => {
+            setAuthModalOpen(false);
+          }}
+        />
+      </div>
+    );
+  }
   const handleDashboardAccess = () => {
-    if (!isAuthenticated) {
-      handleShowAuth('login');
-      return;
-    }
-    
     if (profile?.role !== 'admin') {
       alert('Access denied. Admin privileges required.');
       return;
@@ -101,45 +124,33 @@ const AppContent: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'farm':
-        return <FarmPage products={products} onShowAuth={() => handleShowAuth('login')} onShowCart={() => setCartOpen(true)} />;
+        return <FarmPage products={products} onShowAuth={() => {}} onShowCart={() => setCartOpen(true)} />;
       case 'about':
         return <AboutPage />;
       case 'contact':
         return <ContactPage />;
       case 'analytics':
-        if (!isAuthenticated || profile?.role !== 'admin') {
+        if (profile?.role !== 'admin') {
           return (
             <div className="p-6 text-center">
               <h1 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h1>
               <p className="text-gray-600 mb-4">You need admin privileges to access analytics.</p>
-              <button
-                onClick={() => handleShowAuth('login')}
-                className="bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600"
-              >
-                Login as Admin
-              </button>
             </div>
           );
         }
         return <AnalyticsPage />;
       case 'dashboard':
-        if (!isAuthenticated || profile?.role !== 'admin') {
+        if (profile?.role !== 'admin') {
           return (
             <div className="p-6 text-center">
               <h1 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h1>
               <p className="text-gray-600 mb-4">You need admin privileges to access the dashboard.</p>
-              <button
-                onClick={() => handleShowAuth('login')}
-                className="bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600"
-              >
-                Login as Admin
-              </button>
             </div>
           );
         }
         return <Dashboard products={products} setProducts={setProducts} />;
       default:
-        return <FarmPage products={products} onShowAuth={() => handleShowAuth('login')} onShowCart={() => setCartOpen(true)} />;
+        return <FarmPage products={products} onShowAuth={() => {}} onShowCart={() => setCartOpen(true)} />;
     }
   };
 
@@ -188,35 +199,17 @@ const AppContent: React.FC = () => {
             )}
           </button>
           
-          {/* Auth Buttons */}
-          {!isAuthenticated ? (
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleShowAuth('login')}
-                className="bg-white text-primary-600 px-3 py-1.5 rounded-md shadow-md hover:bg-gray-50 text-sm flex items-center"
-              >
-                <LogIn className="w-4 h-4 mr-1" />
-                Login
-              </button>
-              <button
-                onClick={() => handleShowAuth('register')}
-                className="bg-primary-500 text-white px-3 py-1.5 rounded-md shadow-md hover:bg-primary-600 text-sm flex items-center"
-              >
-                Register
-              </button>
-            </div>
-          ) : (
-            <div className="bg-white rounded-md shadow-md px-3 py-1.5 flex items-center space-x-2">
-              <User className="w-4 h-4 text-primary-600" />
-              <span className="text-sm text-gray-700">{profile?.name || user?.email}</span>
-              <button
-                onClick={logout}
-                className="text-xs text-red-600 hover:text-red-800 ml-2"
-              >
-                Logout
-              </button>
-            </div>
-          )}
+          {/* User Info */}
+          <div className="bg-white rounded-md shadow-md px-3 py-1.5 flex items-center space-x-2">
+            <User className="w-4 h-4 text-primary-600" />
+            <span className="text-sm text-gray-700">{profile?.name || user?.email}</span>
+            <button
+              onClick={logout}
+              className="text-xs text-red-600 hover:text-red-800 ml-2"
+            >
+              Logout
+            </button>
+          </div>
           
           {/* Mobile Hamburger */}
           <button
@@ -248,13 +241,6 @@ const AppContent: React.FC = () => {
         <div className="flex-1 md:ml-64 transition-all duration-300 pt-20 md:pt-0">
           {renderContent()}
         </div>
-        
-        {/* Auth Modal */}
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-          initialMode={authMode}
-        />
         
         {/* Cart */}
         <Cart

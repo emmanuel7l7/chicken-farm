@@ -90,12 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleAuthenticatedUser = async (authUser: any) => {
     try {
-      // Check if email is verified
-      if (!isMockMode && !authUser.email_confirmed_at) {
-        toast.error('Please verify your email first');
-        await supabase.auth.signOut();
-        return;
-      }
+      // Skip email verification check for now to allow immediate login
+      // if (!isMockMode && !authUser.email_confirmed_at) {
+      //   toast.error('Please verify your email first');
+      //   await supabase.auth.signOut();
+      //   return;
+      // }
 
       const customUser: User = {
         id: authUser.id,
@@ -135,15 +135,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
-          // Profile doesn't exist, create one
+          // Profile doesn't exist, create one using auth user data
+          const authUser = await supabase.auth.getUser();
+          const userEmail = authUser.data.user?.email || '';
+          const userName = authUser.data.user?.user_metadata?.name || userEmail.split('@')[0] || 'User';
+          const userPhone = authUser.data.user?.user_metadata?.phone;
+          
           // Check if this email should be admin
-          const isAdminEmail = user?.email === 'admin@farm.com' || user?.email === 'emmanuelmbuli7@gmail.com';
+          const isAdminEmail = userEmail === 'admin@farm.com' || userEmail === 'emmanuelmbuli7@gmail.com';
           
           const newProfile = {
             id: userId,
-            email: user?.email || '',
-            name: user?.name || 'User',
+            email: userEmail,
+            name: userName,
             role: isAdminEmail ? 'admin' as const : 'customer' as const,
+            phone: userPhone,
           };
 
           const { data: createdProfile, error: createError } = await supabase
@@ -161,15 +167,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw fetchError;
         }
       } else if (existingProfile) {
-        setProfile(existingProfile);
+        // Update existing profile to admin if it's the admin email
+        if ((existingProfile.email === 'emmanuelmbuli7@gmail.com' || existingProfile.email === 'admin@farm.com') && existingProfile.role !== 'admin') {
+          const { data: updatedProfile, error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: 'admin' })
+            .eq('id', userId)
+            .select()
+            .single();
+
+          if (updateError) {
+            console.error('Error updating profile to admin:', updateError);
+            setProfile(existingProfile);
+          } else {
+            setProfile(updatedProfile);
+          }
+        } else {
+          setProfile(existingProfile);
+        }
         return;
       }
 
-      // If no profile exists (only create after email verification)
-      if (fetchError?.code === 'PGRST116') {
-        toast.error('Please verify your email first');
-        await supabase.auth.signOut();
-      }
     } catch (error) {
       console.error('Profile fetch error:', error);
       toast.error('Failed to load profile');
@@ -216,12 +234,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       if (data.user) {
-        // Check if email is confirmed
-        if (!data.user.email_confirmed_at) {
-          toast.error('Please confirm your email before logging in. Check your inbox for the confirmation link.');
-          await supabase.auth.signOut();
-          return { success: false, error: 'Email not confirmed' };
-        }
+        // Skip email confirmation check for now
+        // if (!data.user.email_confirmed_at) {
+        //   toast.error('Please confirm your email before logging in. Check your inbox for the confirmation link.');
+        //   await supabase.auth.signOut();
+        //   return { success: false, error: 'Email not confirmed' };
+        // }
 
         toast.success('Logged in successfully!');
         return { success: true };
@@ -278,7 +296,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: {
           data: { name, phone },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       });
 
@@ -287,26 +305,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user) {
         if (data.user.identities && data.user.identities.length === 0) {
           // User already exists but not confirmed
-          toast.error('An account with this email already exists. Please check your email for confirmation link or try logging in.');
+          toast.error('An account with this email already exists. Please try logging in.');
           return { success: false, error: 'User already exists' };
         }
         
-        toast.success('Account created! Please check your email to verify your account.');
+        toast.success('Account created successfully! You can now log in.');
 
-        // If this is an admin registration (should be protected)
-        if (isAdmin) {
-          // Create admin profile immediately (protected by backend)
-          const { error: adminError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              email,
-              name,
-              role: 'admin'
-            });
-
-          if (adminError) throw adminError;
-        }
+        // Profile will be created automatically by the trigger
 
         return { success: true };
       }

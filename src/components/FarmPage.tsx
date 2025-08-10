@@ -31,11 +31,7 @@ const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth, onShowCart })
     console.log('FarmPage: handleAddToCart called for', product.name);
     console.log('FarmPage: isAuthenticated:', isAuthenticated);
     
-    if (!isAuthenticated) {
-      console.log('FarmPage: User not authenticated, showing auth modal');
-      onShowAuth();
-      return;
-    }
+    // User is always authenticated now since we redirect to login
     
     console.log('FarmPage: Adding product to cart:', product);
     addToCart(product);

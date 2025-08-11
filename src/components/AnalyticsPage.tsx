@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, DollarSign, MessageSquare } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, ShoppingCart, DollarSign, MessageSquare, Send } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/validation';
 import LoadingSpinner from './LoadingSpinner';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 interface MockAnalytics {
   total_orders: number;
@@ -43,6 +44,7 @@ const AnalyticsPage: React.FC = () => {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [messageText, setMessageText] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [bulkMessageType, setBulkMessageType] = useState<'all' | 'selected'>('selected');
 
   useEffect(() => {
     loadAnalyticsData();
@@ -235,35 +237,44 @@ const AnalyticsPage: React.FC = () => {
   };
 
   const sendMessageToCustomers = async () => {
-    if (!messageText.trim() || selectedCustomers.length === 0) {
-      alert('Please select customers and enter a message');
+    if (!messageText.trim()) {
+      toast.error('Please enter a message');
+      return;
+    }
+
+    if (bulkMessageType === 'selected' && selectedCustomers.length === 0) {
+      toast.error('Please select customers to send message to');
       return;
     }
 
     setSendingMessage(true);
     try {
-      const selectedCustomerData = customers.filter(c => selectedCustomers.includes(c.id));
-      const customersWithPhone = selectedCustomerData.filter(c => c.phone);
+      const targetCustomers = bulkMessageType === 'all' 
+        ? customers 
+        : customers.filter(c => selectedCustomers.includes(c.id));
+      
+      const customersWithPhone = targetCustomers.filter(c => c.phone);
       
       if (customersWithPhone.length === 0) {
-        alert('None of the selected customers have phone numbers');
+        toast.error('None of the selected customers have phone numbers');
         return;
       }
 
-      // In a real implementation, you would integrate with SMS service
-      // For now, we'll just simulate sending messages
+      // TODO: Integrate with AfricasTalking SMS API
+      // This is where you'll add the actual SMS sending logic
       console.log('Sending message to customers:', customersWithPhone.map(c => c.phone));
       console.log('Message:', messageText);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      alert(`Message sent to ${customersWithPhone.length} customers successfully!`);
+      toast.success(`Message sent to ${customersWithPhone.length} customers successfully!`);
       setMessageText('');
       setSelectedCustomers([]);
+      setBulkMessageType('selected');
     } catch (error) {
       console.error('Error sending messages:', error);
-      alert('Failed to send messages');
+      toast.error('Failed to send messages');
     } finally {
       setSendingMessage(false);
     }
@@ -481,23 +492,52 @@ const AnalyticsPage: React.FC = () => {
             <div className="p-6 border-b border-gray-200 bg-gray-50">
               <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
                 <MessageSquare className="w-5 h-5 mr-2" />
-                Send Message to Customers
+                Bulk SMS to Customers
               </h3>
               <div className="space-y-4">
+                {/* Message Type Selection */}
+                <div className="flex space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="messageType"
+                      value="selected"
+                      checked={bulkMessageType === 'selected'}
+                      onChange={(e) => setBulkMessageType(e.target.value as 'all' | 'selected')}
+                      className="mr-2"
+                    />
+                    Send to Selected Customers
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="messageType"
+                      value="all"
+                      checked={bulkMessageType === 'all'}
+                      onChange={(e) => setBulkMessageType(e.target.value as 'all' | 'selected')}
+                      className="mr-2"
+                    />
+                    Send to All Customers
+                  </label>
+                </div>
+
                 <textarea
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Type your message here..."
+                  placeholder="Type your SMS message here... (e.g., 'New chicken stock available! Visit our farm or call +255-746-283-053 for orders.')"
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">
-                    {selectedCustomers.length} customer(s) selected
+                    {bulkMessageType === 'all' 
+                      ? `${customers.filter(c => c.phone).length} customers with phone numbers`
+                      : `${selectedCustomers.length} customer(s) selected`
+                    }
                   </span>
                   <button
                     onClick={sendMessageToCustomers}
-                    disabled={sendingMessage || selectedCustomers.length === 0 || !messageText.trim()}
+                    disabled={sendingMessage || (bulkMessageType === 'selected' && selectedCustomers.length === 0) || !messageText.trim()}
                     className="bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                   >
                     {sendingMessage ? (
@@ -507,8 +547,8 @@ const AnalyticsPage: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        Send Message
+                        <Send className="w-4 h-4 mr-2" />
+                        Send SMS
                       </>
                     )}
                   </button>

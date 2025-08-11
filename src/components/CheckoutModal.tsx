@@ -269,6 +269,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="+255 XXX XXX XXX"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Required for delivery coordination and order updates
+                  </p>
                 </div>
               )}
 
@@ -377,6 +380,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="+255 XXX XXX XXX"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Required for delivery coordination and order updates
+                </p>
               </div>
             )}
 

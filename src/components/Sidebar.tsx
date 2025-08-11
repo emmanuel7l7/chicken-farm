@@ -7,6 +7,8 @@ import {
   X,
   LogOut,
   User,
+  ShoppingCart,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -35,6 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   if (isAuthenticated && profile?.role === 'admin') {
     menuItems.push({ id: 'dashboard', label: 'Dashboard', icon: Settings });
+    menuItems.push({ id: 'orders', label: 'Orders', icon: ShoppingCart });
+    menuItems.push({ id: 'analytics', label: 'Analytics', icon: BarChart3 });
   }
 
   return (

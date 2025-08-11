@@ -2,6 +2,69 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Chicken Farm Management System
+
+A comprehensive web application for managing a chicken farm business with features for:
+- Product catalog and ordering
+- Customer management
+- Order tracking and analytics
+- Payment processing (Mobile Money & Card payments)
+- Admin dashboard with bulk SMS capabilities
+
+### Key Features
+
+#### For Customers:
+- Browse farm products (layers, broilers, chicks, eggs, meat)
+- Add items to cart and place orders
+- Multiple payment options (M-Pesa, Tigo Pesa, Airtel Money, Cash on Delivery, Credit Cards)
+- Order tracking and history
+
+#### For Admins:
+- Product management (add, edit, delete products)
+- Order management and status updates
+- Customer analytics and insights
+- Bulk SMS messaging to customers
+- Revenue and sales tracking
+
+### Technology Stack
+- **Frontend**: React 18 with TypeScript
+- **Styling**: Tailwind CSS
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Payments**: Stripe, Mobile Money APIs
+- **SMS**: AfricasTalking API (ready for integration)
+- **State Management**: React Context API
+
+### Environment Variables
+
+Create a `.env` file in the root directory with:
+
+```env
+# Supabase Configuration
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Stripe Configuration (Optional)
+REACT_APP_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+
+# AfricasTalking SMS Configuration (Optional)
+REACT_APP_AFRICASTALKING_API_KEY=your_africastalking_api_key
+REACT_APP_AFRICASTALKING_USERNAME=your_africastalking_username
+```
+
+### Admin Access
+
+Admin users are automatically created for these email addresses:
+- `admin@farm.com`
+- `emmanuelmbuli7@gmail.com`
+
+### SMS Integration
+
+The application includes SMS functionality structure for AfricasTalking API. To enable SMS:
+1. Sign up for AfricasTalking account
+2. Add your API credentials to environment variables
+3. Implement the actual API calls in `src/utils/sms.ts`
+
 ## Available Scripts
 
 In the project directory, you can run:

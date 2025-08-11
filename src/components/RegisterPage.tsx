@@ -112,18 +112,19 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
 
         <div>
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number (Optional)
+            Phone Number *
           </label>
           <input
             type="tel"
             name="phone"
             value={formData.phone}
             onChange={handleChange}
+            required
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="+255712345678 or 0712345678"
           />
           <p className="text-xs text-gray-500 mt-1">
-            We'll use this to send you order updates and notifications
+            Required for order updates and SMS notifications
           </p>
         </div>
 

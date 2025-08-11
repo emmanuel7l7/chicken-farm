@@ -265,6 +265,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     phone?: string, 
     isAdmin: boolean = false
   ) => {
+    // Validate required fields
+    if (!phone || phone.trim() === '') {
+      return { 
+        success: false, 
+        error: 'Phone number is required' 
+      };
+    }
+
     setIsLoading(true);
     try {
       if (isMockMode) {

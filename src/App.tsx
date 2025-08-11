@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { Toaster } from 'react-hot-toast';
 import Sidebar from "./components/Sidebar";
-import { Menu, User, LogIn, ShoppingCart } from "lucide-react";
+import { Menu, User, LogIn, ShoppingCart, BarChart3 } from "lucide-react";
 import FarmPage from "./components/FarmPage";
 import AboutPage from "./components/AboutPage";
 import ContactPage from "./components/ContactPage";

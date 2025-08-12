@@ -11,18 +11,15 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   open?: boolean;
   onClose?: () => void;
   rightOnMobile?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  activeTab,
-  setActiveTab,
   open = true,
   onClose,
   rightOnMobile,
@@ -30,15 +27,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   const { profile, logout, isAuthenticated } = useAuth();
 
   const menuItems = [
-    { id: 'farm', label: 'Farm', icon: Home },
-    { id: 'about', label: 'About Us', icon: Info },
-    { id: 'contact', label: 'Contact Us', icon: Phone },
+    { id: '/', label: 'Farm', icon: Home },
+    { id: '/about', label: 'About Us', icon: Info },
+    { id: '/contact', label: 'Contact Us', icon: Phone },
   ];
 
   if (isAuthenticated && profile?.role === 'admin') {
-    menuItems.push({ id: 'dashboard', label: 'Dashboard', icon: Settings });
-    menuItems.push({ id: 'orders', label: 'Orders', icon: ShoppingCart });
-    menuItems.push({ id: 'analytics', label: 'Analytics', icon: BarChart3 });
+    menuItems.push({ id: '/admin', label: 'Dashboard', icon: Settings });
   }
 
   return (
@@ -87,18 +82,15 @@ const Sidebar: React.FC<SidebarProps> = ({
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
-                <button
+                <Link
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center px-6 py-3 text-left hover:bg-primary-50 transition-colors ${
-                    activeTab === item.id
-                      ? 'bg-primary-100 text-primary-700 border-r-4 border-primary-500'
-                      : 'text-gray-600'
-                  }`}
+                  to={item.id}
+                  className={`w-full flex items-center px-6 py-3 text-left hover:bg-primary-50 transition-colors`}
+                  onClick={onClose}
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   {item.label}
-                </button>
+                </Link>
               );
             })}
           </nav>

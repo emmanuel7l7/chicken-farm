@@ -2,28 +2,28 @@ import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { Toaster } from 'react-hot-toast';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from "./components/Sidebar";
-import { Menu, User, LogIn, ShoppingCart, BarChart3 } from "lucide-react";
+import { Menu, User, ShoppingCart } from "lucide-react";
 import FarmPage from "./components/FarmPage";
 import AboutPage from "./components/AboutPage";
 import ContactPage from "./components/ContactPage";
-import AnalyticsPage from "./components/AnalyticsPage";
 import Cart from "./components/Cart";
 import CheckoutModal from "./components/CheckoutModal";
 import ErrorBoundary from "./components/ErrorBoundary";
-import Dashboard from "./components/Dashboard";
 import AuthModal from "./components/AuthModal";
 import { useCart } from "./contexts/CartContext";
 import { Product } from "./types/Product";
 import LoadingSpinner from "./components/LoadingSpinner";
+import AdminLayout from "./components/admin/AdminLayout";
+import Dashboard from "./components/admin/Dashboard";
+import OrdersPage from "./components/admin/OrdersPage";
+import AnalyticsPage from "./components/admin/AnalyticsPage";
 
 const AppContent: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('farm');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const { user, profile, isAuthenticated, logout, isLoading } = useAuth();
   const { getTotalItems } = useCart();
 
@@ -38,52 +38,8 @@ const AppContent: React.FC = () => {
       image: 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg',
       isActive: true,
     },
-    {
-      id: '2',
-      name: 'Fresh Farm Eggs',
-      category: 'eggs',
-      price: 8500,
-      unit: 'tray',
-      description: 'Farm-fresh eggs from free-range hens. Rich in nutrients and perfect for cooking.',
-      image: 'https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg',
-      isActive: true,
-    },
-    {
-      id: '3',
-      name: 'Broiler Chickens',
-      category: 'broilers',
-      price: 18000,
-      unit: 'chicken',
-      description: 'Healthy broiler chickens raised for meat production. Fed with quality feed.',
-      image: 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg',
-      isActive: true,
-    },
-    {
-      id: '4',
-      name: 'Day-Old Chicks',
-      category: 'chicks',
-      price: 2500,
-      unit: 'box of 50',
-      description: 'Healthy day-old chicks ready for raising. Vaccinated and quality assured.',
-      image: 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg',
-      isActive: true,
-    },
-    {
-      id: '5',
-      name: 'Fresh Chicken Meat',
-      category: 'meat',
-      price: 12000,
-      unit: 'whole chicken',
-      description: 'Fresh, tender chicken meat from our farm. Processed with highest hygiene standards.',
-      image: 'https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg',
-      isActive: true,
-    },
+    // ... other products
   ]);
-
-  const handleShowAuth = (mode: 'login' | 'register' = 'login') => {
-    setAuthMode(mode);
-    setAuthModalOpen(true);
-  };
 
   // Show loading spinner while auth is initializing
   if (isLoading) {
@@ -104,161 +60,132 @@ const AppContent: React.FC = () => {
         <AuthModal
           isOpen={true}
           onClose={() => {}} // Don't allow closing when not authenticated
-          initialMode={authMode}
-          onAuthSuccess={() => {
-            setAuthModalOpen(false);
-          }}
+          onAuthSuccess={() => {}}
         />
       </div>
     );
   }
-  const handleDashboardAccess = () => {
-    if (profile?.role !== 'admin') {
-      alert('Access denied. Admin privileges required.');
-      return;
-    }
-    
-    setActiveTab('dashboard');
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'farm':
-        return <FarmPage products={products} onShowAuth={() => {}} onShowCart={() => setCartOpen(true)} />;
-      case 'about':
-        return <AboutPage />;
-      case 'contact':
-        return <ContactPage />;
-      case 'analytics':
-        if (profile?.role !== 'admin') {
-          return (
-            <div className="p-6 text-center">
-              <h1 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h1>
-              <p className="text-gray-600 mb-4">You need admin privileges to access analytics.</p>
-            </div>
-          );
-        }
-        return <AnalyticsPage />;
-      case 'dashboard':
-        if (profile?.role !== 'admin') {
-          return (
-            <div className="p-6 text-center">
-              <h1 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h1>
-              <p className="text-gray-600 mb-4">You need admin privileges to access the dashboard.</p>
-            </div>
-          );
-        }
-        return <Dashboard products={products} setProducts={setProducts} />;
-      default:
-        return <FarmPage products={products} onShowAuth={() => {}} onShowCart={() => setCartOpen(true)} />;
-    }
-  };
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50 flex">
-        {/* Toast Notifications */}
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              iconTheme: {
-                primary: '#22c55e',
-                secondary: '#fff',
+    <Router>
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gray-50 flex">
+          {/* Toast Notifications */}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
               },
-            },
-            error: {
-              duration: 5000,
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#22c55e',
+                  secondary: '#fff',
+                },
               },
-            },
-          }}
-        />
+              error: {
+                duration: 5000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
 
-        {/* Top Bar */}
-        <div className="fixed top-0 right-0 z-30 p-4 flex items-center space-x-2 bg-white/90 backdrop-blur-sm border-b border-gray-200">
-          {/* Cart Button */}
-          <button
-            onClick={() => setCartOpen(true)}
-            className="relative bg-white text-primary-600 px-3 py-1.5 rounded-md shadow-md hover:bg-gray-50 text-sm flex items-center"
-          >
-            <ShoppingCart className="w-4 h-4 mr-1" />
-            Cart
-            {getTotalItems() > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {getTotalItems()}
-              </span>
-            )}
-          </button>
-          
-          {/* User Info */}
-          <div className="bg-white rounded-md shadow-md px-3 py-1.5 flex items-center space-x-2">
-            <User className="w-4 h-4 text-primary-600" />
-            <span className="text-sm text-gray-700">{profile?.name || user?.email}</span>
+          {/* Top Bar */}
+          <div className="fixed top-0 right-0 z-30 p-4 flex items-center space-x-2 bg-white/90 backdrop-blur-sm border-b border-gray-200">
+            {/* Cart Button */}
             <button
-              onClick={logout}
-              className="text-xs text-red-600 hover:text-red-800 ml-2"
+              onClick={() => setCartOpen(true)}
+              className="relative bg-white text-primary-600 px-3 py-1.5 rounded-md shadow-md hover:bg-gray-50 text-sm flex items-center"
             >
-              Logout
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              Cart
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {getTotalItems()}
+                </span>
+              )}
+            </button>
+            
+            {/* User Info */}
+            <div className="bg-white rounded-md shadow-md px-3 py-1.5 flex items-center space-x-2">
+              <User className="w-4 h-4 text-primary-600" />
+              <span className="text-sm text-gray-700">{profile?.name || user?.email}</span>
+              <button
+                onClick={logout}
+                className="text-xs text-red-600 hover:text-red-800 ml-2"
+              >
+                Logout
+              </button>
+            </div>
+            
+            {/* Mobile Hamburger */}
+            <button
+              className="p-2 bg-white rounded-md shadow-md md:hidden"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open sidebar"
+            >
+              <Menu className="w-6 h-6 text-primary-600" />
             </button>
           </div>
+
+          {/* Sidebar */}
+          <Sidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            rightOnMobile={true}
+          />
+
+          {/* Main Content */}
+          <div className="flex-1 md:ml-64 transition-all duration-300 pt-20 md:pt-0">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<FarmPage products={products} onShowCart={() => setCartOpen(true)} />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                profile?.role === 'admin' ? (
+                  <AdminLayout />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }>
+                <Route index element={<Dashboard products={products} setProducts={setProducts} />} />
+                <Route path="dashboard" element={<Dashboard products={products} setProducts={setProducts} />} />
+                <Route path="orders" element={<OrdersPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+              </Route>
+              
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </div>
           
-          {/* Mobile Hamburger */}
-          <button
-            className="p-2 bg-white rounded-md shadow-md md:hidden"
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open sidebar"
-          >
-            <Menu className="w-6 h-6 text-primary-600" />
-          </button>
+          {/* Cart */}
+          <Cart
+            isOpen={cartOpen}
+            onClose={() => setCartOpen(false)}
+            onCheckout={() => {
+              setCartOpen(false);
+              setCheckoutOpen(true);
+            }}
+          />
+          
+          {/* Checkout Modal */}
+          <CheckoutModal
+            isOpen={checkoutOpen}
+            onClose={() => setCheckoutOpen(false)}
+          />
         </div>
-
-        {/* Sidebar */}
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={(tab) => {
-            if (tab === 'dashboard') {
-              handleDashboardAccess();
-            } else {
-              setActiveTab(tab);
-            }
-            setSidebarOpen(false);
-          }}
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          rightOnMobile={true}
-        />
-
-        {/* Main Content */}
-        <div className="flex-1 md:ml-64 transition-all duration-300 pt-20 md:pt-0">
-          {renderContent()}
-        </div>
-        
-        {/* Cart */}
-        <Cart
-          isOpen={cartOpen}
-          onClose={() => setCartOpen(false)}
-          onCheckout={() => {
-            setCartOpen(false);
-            setCheckoutOpen(true);
-          }}
-        />
-        
-        {/* Checkout Modal */}
-        <CheckoutModal
-          isOpen={checkoutOpen}
-          onClose={() => setCheckoutOpen(false)}
-        />
-      </div>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </Router>
   );
 };
 

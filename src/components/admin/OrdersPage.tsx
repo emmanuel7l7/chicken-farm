@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Eye, CheckCircle, Clock, Truck, X, Phone, Mail, MapPin } from 'lucide-react';
-import { formatCurrency, formatDate } from '../utils/validation';
-import LoadingSpinner from './LoadingSpinner';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { formatCurrency, formatDate } from '../../utils/validation';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import AdminNav from './AdminNav';
 
 interface Order {

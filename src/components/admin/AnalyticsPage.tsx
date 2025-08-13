@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, ShoppingCart, DollarSign, MessageSquare, Send } from 'lucide-react';
-import { formatCurrency, formatDate } from '../utils/validation';
-import LoadingSpinner from './LoadingSpinner';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { formatCurrency, formatDate } from '../../utils/validation';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import AdminNav from './AdminNav';
 

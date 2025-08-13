@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Product } from '../types/Product';
+import { Product } from '../../types/Product';
 
 interface ProductFormProps {
   product?: Product | null;

@@ -1,8 +1,13 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
-import { Toaster } from 'react-hot-toast';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from "react-hot-toast";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import { Menu, User, ShoppingCart } from "lucide-react";
 import FarmPage from "./components/FarmPage";
@@ -15,7 +20,7 @@ import AuthModal from "./components/AuthModal";
 import { useCart } from "./contexts/CartContext";
 import { Product } from "./types/Product";
 import LoadingSpinner from "./components/LoadingSpinner";
-import AdminLayout from "./components/admin/AdminLayout";
+import AdminLayout from "./components/admin/adminLayout";
 import Dashboard from "./components/admin/Dashboard";
 import OrdersPage from "./components/admin/OrdersPage";
 import AnalyticsPage from "./components/admin/AnalyticsPage";
@@ -29,13 +34,15 @@ const AppContent: React.FC = () => {
 
   const [products, setProducts] = useState<Product[]>([
     {
-      id: '1',
-      name: 'Premium Layer Hens',
-      category: 'layers',
+      id: "1",
+      name: "Premium Layer Hens",
+      category: "layers",
       price: 25000,
-      unit: 'chicken',
-      description: 'High-quality layer hens that produce fresh eggs daily. Well-fed and healthy.',
-      image: 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg',
+      unit: "chicken",
+      description:
+        "High-quality layer hens that produce fresh eggs daily. Well-fed and healthy.",
+      image:
+        "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg",
       isActive: true,
     },
     // ... other products
@@ -47,7 +54,7 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Loadinggggg...</p>
         </div>
       </div>
     );
@@ -71,26 +78,26 @@ const AppContent: React.FC = () => {
       <ErrorBoundary>
         <div className="min-h-screen bg-gray-50 flex">
           {/* Toast Notifications */}
-          <Toaster 
+          <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
               style: {
-                background: '#363636',
-                color: '#fff',
+                background: "#363636",
+                color: "#fff",
               },
               success: {
                 duration: 3000,
                 iconTheme: {
-                  primary: '#22c55e',
-                  secondary: '#fff',
+                  primary: "#22c55e",
+                  secondary: "#fff",
                 },
               },
               error: {
                 duration: 5000,
                 iconTheme: {
-                  primary: '#ef4444',
-                  secondary: '#fff',
+                  primary: "#ef4444",
+                  secondary: "#fff",
                 },
               },
             }}
@@ -111,11 +118,13 @@ const AppContent: React.FC = () => {
                 </span>
               )}
             </button>
-            
+
             {/* User Info */}
             <div className="bg-white rounded-md shadow-md px-3 py-1.5 flex items-center space-x-2">
               <User className="w-4 h-4 text-primary-600" />
-              <span className="text-sm text-gray-700">{profile?.name || user?.email}</span>
+              <span className="text-sm text-gray-700">
+                {profile?.name || user?.email}
+              </span>
               <button
                 onClick={logout}
                 className="text-xs text-red-600 hover:text-red-800 ml-2"
@@ -123,7 +132,7 @@ const AppContent: React.FC = () => {
                 Logout
               </button>
             </div>
-            
+
             {/* Mobile Hamburger */}
             <button
               className="p-2 bg-white rounded-md shadow-md md:hidden"
@@ -145,29 +154,50 @@ const AppContent: React.FC = () => {
           <div className="flex-1 md:ml-64 transition-all duration-300 pt-20 md:pt-0">
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<FarmPage products={products} onShowCart={() => setCartOpen(true)} />} />
+              <Route
+                path="/"
+                element={
+                  <FarmPage
+                    products={products}
+                    onShowCart={() => setCartOpen(true)}
+                  />
+                }
+              />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
-              
+
               {/* Admin Routes */}
-              <Route path="/admin" element={
-                profile?.role === 'admin' ? (
-                  <AdminLayout />
-                ) : (
-                  <Navigate to="/" />
-                )
-              }>
-                <Route index element={<Dashboard products={products} setProducts={setProducts} />} />
-                <Route path="dashboard" element={<Dashboard products={products} setProducts={setProducts} />} />
+              <Route
+                path="/admin"
+                element={
+                  profile?.role === "admin" ? (
+                    <AdminLayout />
+                  ) : (
+                    <Navigate to="/" />
+                  )
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <Dashboard products={products} setProducts={setProducts} />
+                  }
+                />
+                <Route
+                  path="dashboard"
+                  element={
+                    <Dashboard products={products} setProducts={setProducts} />
+                  }
+                />
                 <Route path="orders" element={<OrdersPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
               </Route>
-              
+
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>
-          
+
           {/* Cart */}
           <Cart
             isOpen={cartOpen}
@@ -177,7 +207,7 @@ const AppContent: React.FC = () => {
               setCheckoutOpen(true);
             }}
           />
-          
+
           {/* Checkout Modal */}
           <CheckoutModal
             isOpen={checkoutOpen}

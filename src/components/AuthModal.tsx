@@ -27,6 +27,25 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setMode(initialMode);
   }, [isOpen, initialMode]);
 
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-8 max-w-md w-full text-center">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Database Not Configured</h2>
+          <p className="text-gray-600 mb-4">
+            Please configure Supabase to enable authentication.
+          </p>
+          <button
+            onClick={onClose}
+            className="bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleLogin = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setAuthError(null);
     try {
@@ -55,7 +74,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const result = await register(email, password, name, phone);
       if (result.success) {
-        setAuthError('Please check your email to verify your account');
+        setAuthError('Registration successful! Please check your email to verify your account, then login.');
         setMode('login');
       } else {
         setAuthError(result.error || 'Registration failed');
@@ -82,7 +101,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         </button>
         
         {authError && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-t-lg text-sm">
+          <div className={`${authError.includes('successful') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'} p-3 rounded-t-lg text-sm`}>
             {authError}
           </div>
         )}
@@ -95,7 +114,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
               setMode('register');
             }}
             onClose={onClose}
-            isMockMode={!isSupabaseConfigured}
           />
         ) : (
           <RegisterPage
@@ -105,7 +123,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
               setMode('login');
             }}
             onClose={onClose}
-            isMockMode={!isSupabaseConfigured}
           />
         )}
       </div>

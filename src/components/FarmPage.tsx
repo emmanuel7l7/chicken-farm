@@ -6,11 +6,10 @@ import { useCart } from '../contexts/CartContext';
 
 interface FarmPageProps {
   products: Product[];
-  onShowAuth: () => void;
   onShowCart: () => void;
 }
 
-const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth, onShowCart }) => {
+const FarmPage: React.FC<FarmPageProps> = ({ products, onShowCart }) => {
   const [activeCategory, setActiveCategory] = useState('layers');
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
@@ -30,8 +29,6 @@ const FarmPage: React.FC<FarmPageProps> = ({ products, onShowAuth, onShowCart })
   const handleAddToCart = (product: Product) => {
     console.log('FarmPage: handleAddToCart called for', product.name);
     console.log('FarmPage: isAuthenticated:', isAuthenticated);
-    
-    // User is always authenticated now since we redirect to login
     
     console.log('FarmPage: Adding product to cart:', product);
     addToCart(product);

@@ -6,13 +6,13 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import AdminNav from './AdminNav';
 
-interface MockAnalytics {
+interface Analytics {
   total_orders: number;
   total_revenue: number;
   total_customers: number;
 }
 
-interface MockOrder {
+interface Order {
   id: string;
   user_name: string;
   user_email: string;
@@ -36,8 +36,8 @@ interface Customer {
 }
 
 const AnalyticsPage: React.FC = () => {
-  const [analytics, setAnalytics] = useState<MockAnalytics | null>(null);
-  const [recentOrders, setRecentOrders] = useState<MockOrder[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -52,145 +52,113 @@ const AnalyticsPage: React.FC = () => {
   }, []);
 
   const loadAnalyticsData = async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      if (isSupabaseConfigured && supabase) {
-        // Load real data from Supabase
-        const { data: ordersData, error: ordersError } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            profiles:user_id (name, email, phone),
-            order_items (
-              quantity,
-              unit_price,
-              total_price,
-              products (name)
-            )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(20);
+      // Load real data from Supabase
+      const { data: ordersData, error: ordersError } = await supabase!
+        .from('orders')
+        .select(`
+          *,
+          profiles:user_id (name, email, phone),
+          order_items (
+            quantity,
+            unit_price,
+            total_price,
+            products (name)
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-        if (ordersError) throw ordersError;
+      if (ordersError) throw ordersError;
 
-        // Transform orders data
-        const transformedOrders = ordersData?.map(order => ({
-          id: order.id,
-          user_name: order.profiles?.name || 'Unknown',
-          user_email: order.profiles?.email || 'Unknown',
-          user_phone: order.profiles?.phone,
-          items: order.order_items?.map((item: any) => 
-            `${item.products?.name} x${item.quantity}`
-          ).join(', ') || 'No items',
-          total_amount: order.total_amount,
-          payment_method: order.payment_method || 'cash_on_delivery',
-          payment_status: order.payment_status,
-          status: order.status,
-          created_at: order.created_at,
-        })) || [];
+      // Transform orders data
+      const transformedOrders = ordersData?.map(order => ({
+        id: order.id,
+        user_name: order.profiles?.name || 'Unknown',
+        user_email: order.profiles?.email || 'Unknown',
+        user_phone: order.profiles?.phone,
+        items: order.order_items?.map((item: any) => 
+          `${item.products?.name} x${item.quantity}`
+        ).join(', ') || 'No items',
+        total_amount: order.total_amount,
+        payment_method: order.payment_method || 'cash_on_delivery',
+        payment_status: order.payment_status,
+        status: order.status,
+        created_at: order.created_at,
+      })) || [];
 
-        setRecentOrders(transformedOrders);
+      setRecentOrders(transformedOrders);
 
-        // Load customers data
-        const { data: customersData, error: customersError } = await supabase
-          .from('profiles')
-          .select(`
+      // Load customers data
+      const { data: customersData, error: customersError } = await supabase!
+        .from('profiles')
+        .select(`
+          id,
+          name,
+          email,
+          phone,
+          orders (
             id,
-            name,
-            email,
-            phone,
-            orders (
-              id,
-              total_amount,
-              created_at
-            )
-          `)
-          .eq('role', 'customer');
+            total_amount,
+            created_at
+          )
+        `)
+        .eq('role', 'customer');
 
-        if (customersError) throw customersError;
+      if (customersError) throw customersError;
 
-        const transformedCustomers = customersData?.map(customer => ({
-          id: customer.id,
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          total_orders: customer.orders?.length || 0,
-          total_spent: customer.orders?.reduce((sum: number, order: any) => sum + order.total_amount, 0) || 0,
-          last_order: customer.orders?.[0]?.created_at || 'Never',
-        })) || [];
+      const transformedCustomers = customersData?.map(customer => ({
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        total_orders: customer.orders?.length || 0,
+        total_spent: customer.orders?.reduce((sum: number, order: any) => sum + order.total_amount, 0) || 0,
+        last_order: customer.orders?.[0]?.created_at || 'Never',
+      })) || [];
 
-        setCustomers(transformedCustomers);
+      setCustomers(transformedCustomers);
 
-        // Calculate analytics
-        const totalOrders = transformedOrders.length;
-        const totalRevenue = transformedOrders.reduce((sum, order) => sum + order.total_amount, 0);
-        const totalCustomers = transformedCustomers.length;
+      // Calculate analytics
+      const totalOrders = transformedOrders.length;
+      const totalRevenue = transformedOrders.reduce((sum, order) => sum + order.total_amount, 0);
+      const totalCustomers = transformedCustomers.length;
 
-        setAnalytics({
-          total_orders: totalOrders,
-          total_revenue: totalRevenue,
-          total_customers: totalCustomers,
-        });
+      setAnalytics({
+        total_orders: totalOrders,
+        total_revenue: totalRevenue,
+        total_customers: totalCustomers,
+      });
 
-        setMonthlyRevenue(totalRevenue * 4); // Estimate monthly from recent orders
-      } else {
-        // Mock data for development
-        setAnalytics({
-          total_orders: 12,
-          total_revenue: 450000,
-          total_customers: 8,
-        });
-        
-        setRecentOrders([
-          {
-            id: '1',
-            user_name: 'John Doe',
-            user_email: 'john@example.com',
-            user_phone: '+255712345678',
-            items: 'Premium Layer Hens x2, Fresh Farm Eggs x1',
-            total_amount: 58500,
-            payment_method: 'cash_on_delivery',
-            payment_status: 'pending',
-            status: 'confirmed',
-            created_at: new Date().toISOString(),
-          },
-        ]);
-
-        setCustomers([
-          {
-            id: '1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            phone: '+255712345678',
-            total_orders: 3,
-            total_spent: 125000,
-            last_order: new Date().toISOString(),
-          },
-        ]);
-        
-        setMonthlyRevenue(1250000);
-      }
+      setMonthlyRevenue(totalRevenue * 4); // Estimate monthly from recent orders
     } catch (error) {
       console.error('Error loading analytics data:', error);
+      toast.error('Failed to load analytics data');
     } finally {
       setLoading(false);
     }
   };
 
   const updateOrderStatus = async (orderId: string, status: string, paymentStatus?: string) => {
+    if (!isSupabaseConfigured) return;
+
     try {
-      if (isSupabaseConfigured && supabase) {
-        const updateData: any = { status };
-        if (paymentStatus) {
-          updateData.payment_status = paymentStatus;
-        }
-
-        const { error } = await supabase
-          .from('orders')
-          .update(updateData)
-          .eq('id', orderId);
-
-        if (error) throw error;
+      const updateData: any = { status };
+      if (paymentStatus) {
+        updateData.payment_status = paymentStatus;
       }
+
+      const { error } = await supabase!
+        .from('orders')
+        .update(updateData)
+        .eq('id', orderId);
+
+      if (error) throw error;
 
       // Update local state
       setRecentOrders(prev => 
@@ -201,10 +169,10 @@ const AnalyticsPage: React.FC = () => {
         )
       );
       
-      alert('Order status updated successfully');
+      toast.success('Order status updated successfully');
     } catch (error) {
       console.error('Error updating order status:', error);
-      alert('Failed to update order status');
+      toast.error('Failed to update order status');
     }
   };
 
@@ -275,6 +243,23 @@ const AnalyticsPage: React.FC = () => {
     );
   }
 
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <div className="w-64 p-4 border-r">
+          <AdminNav />
+        </div>
+        <div className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Database Not Configured</h2>
+            <p className="text-gray-600">Please configure Supabase to view analytics.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="w-64 p-4 border-r">
@@ -300,7 +285,7 @@ const AnalyticsPage: React.FC = () => {
             <div className="flex items-center">
               <ShoppingCart className="w-8 h-8 text-blue-500 mr-3" />
               <div>
-                <p className="text-sm font-medium text-gray-600">Today's Orders</p>
+                <p className="text-sm font-medium text-gray-600">Total Orders</p>
                 <p className="text-2xl font-bold text-gray-900">{analytics?.total_orders || 0}</p>
               </div>
             </div>
@@ -310,7 +295,7 @@ const AnalyticsPage: React.FC = () => {
             <div className="flex items-center">
               <Users className="w-8 h-8 text-purple-500 mr-3" />
               <div>
-                <p className="text-sm font-medium text-gray-600">Today's Customers</p>
+                <p className="text-sm font-medium text-gray-600">Total Customers</p>
                 <p className="text-2xl font-bold text-gray-900">{analytics?.total_customers || 0}</p>
               </div>
             </div>
@@ -320,14 +305,14 @@ const AnalyticsPage: React.FC = () => {
             <div className="flex items-center">
               <TrendingUp className="w-8 h-8 text-orange-500 mr-3" />
               <div>
-                <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-bold text-gray-900">{formatCurrency(analytics?.total_revenue || 0)}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Recent Orders */}
+        {/* Management Section */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">

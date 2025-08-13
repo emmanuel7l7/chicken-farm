@@ -4,6 +4,7 @@ import { formatCurrency, formatDate } from '../../utils/validation';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import AdminNav from './AdminNav';
+import toast from 'react-hot-toast';
 
 interface Order {
   id: string;
@@ -38,102 +39,73 @@ const OrdersPage: React.FC = () => {
   }, []);
 
   const loadOrders = async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { data: ordersData, error } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            profiles:user_id (name, email, phone),
-            order_items (
-              quantity,
-              unit_price,
-              total_price,
-              products (name)
-            )
-          `)
-          .order('created_at', { ascending: false });
+      const { data: ordersData, error } = await supabase!
+        .from('orders')
+        .select(`
+          *,
+          profiles:user_id (name, email, phone),
+          order_items (
+            quantity,
+            unit_price,
+            total_price,
+            products (name)
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        const transformedOrders = ordersData?.map(order => ({
-          id: order.id,
-          user_name: order.profiles?.name || 'Unknown',
-          user_email: order.profiles?.email || 'Unknown',
-          user_phone: order.profiles?.phone,
-          items: order.order_items?.map((item: any) => ({
-            product_name: item.products?.name || 'Unknown Product',
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total_price: item.total_price,
-          })) || [],
-          total_amount: order.total_amount,
-          payment_method: order.payment_method || 'cash_on_delivery',
-          payment_status: order.payment_status,
-          status: order.status,
-          delivery_address: order.delivery_address || '',
-          notes: order.notes,
-          created_at: order.created_at,
-          updated_at: order.updated_at,
-        })) || [];
+      const transformedOrders = ordersData?.map(order => ({
+        id: order.id,
+        user_name: order.profiles?.name || 'Unknown',
+        user_email: order.profiles?.email || 'Unknown',
+        user_phone: order.profiles?.phone,
+        items: order.order_items?.map((item: any) => ({
+          product_name: item.products?.name || 'Unknown Product',
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        })) || [],
+        total_amount: order.total_amount,
+        payment_method: order.payment_method || 'cash_on_delivery',
+        payment_status: order.payment_status,
+        status: order.status,
+        delivery_address: order.delivery_address || '',
+        notes: order.notes,
+        created_at: order.created_at,
+        updated_at: order.updated_at,
+      })) || [];
 
-        setOrders(transformedOrders);
-      } else {
-        // Mock data
-        const mockOrders: Order[] = [
-          {
-            id: '1',
-            user_name: 'John Doe',
-            user_email: 'john@example.com',
-            user_phone: '+255712345678',
-            items: [
-              {
-                product_name: 'Premium Layer Hens',
-                quantity: 2,
-                unit_price: 25000,
-                total_price: 50000,
-              },
-              {
-                product_name: 'Fresh Farm Eggs',
-                quantity: 1,
-                unit_price: 8500,
-                total_price: 8500,
-              }
-            ],
-            total_amount: 58500,
-            payment_method: 'cash_on_delivery',
-            payment_status: 'pending',
-            status: 'confirmed',
-            delivery_address: '123 Main Street, Dar es Salaam',
-            notes: 'Please call before delivery',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ];
-        setOrders(mockOrders);
-      }
+      setOrders(transformedOrders);
     } catch (error) {
       console.error('Error loading orders:', error);
+      toast.error('Failed to load orders');
     } finally {
       setLoading(false);
     }
   };
 
   const updateOrderStatus = async (orderId: string, status: string, paymentStatus?: string) => {
+    if (!isSupabaseConfigured) return;
+
     try {
-      if (isSupabaseConfigured && supabase) {
-        const updateData: any = { status, updated_at: new Date().toISOString() };
-        if (paymentStatus) {
-          updateData.payment_status = paymentStatus;
-        }
-
-        const { error } = await supabase
-          .from('orders')
-          .update(updateData)
-          .eq('id', orderId);
-
-        if (error) throw error;
+      const updateData: any = { status, updated_at: new Date().toISOString() };
+      if (paymentStatus) {
+        updateData.payment_status = paymentStatus;
       }
+
+      const { error } = await supabase!
+        .from('orders')
+        .update(updateData)
+        .eq('id', orderId);
+
+      if (error) throw error;
 
       setOrders(prev => 
         prev.map(order => 
@@ -148,10 +120,10 @@ const OrdersPage: React.FC = () => {
         )
       );
       
-      alert('Order status updated successfully');
+      toast.success('Order status updated successfully');
     } catch (error) {
       console.error('Error updating order status:', error);
-      alert('Failed to update order status');
+      toast.error('Failed to update order status');
     }
   };
 
@@ -190,6 +162,23 @@ const OrdersPage: React.FC = () => {
           <div className="text-center">
             <LoadingSpinner size="lg" className="mx-auto mb-4" />
             <p className="text-gray-600">Loading orders...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <div className="w-64 p-4 border-r">
+          <AdminNav />
+        </div>
+        <div className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Database Not Configured</h2>
+            <p className="text-gray-600">Please configure Supabase to view orders.</p>
           </div>
         </div>
       </div>
@@ -319,6 +308,7 @@ const OrdersPage: React.FC = () => {
                       <button
                         onClick={() => setSelectedOrder(order)}
                         className="text-blue-600 hover:text-blue-900"
+                        title="View Details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -326,6 +316,7 @@ const OrdersPage: React.FC = () => {
                         <button
                           onClick={() => updateOrderStatus(order.id, 'confirmed', 'paid')}
                           className="text-green-600 hover:text-green-900"
+                          title="Confirm Payment"
                         >
                           <CheckCircle className="w-4 h-4" />
                         </button>
@@ -334,6 +325,7 @@ const OrdersPage: React.FC = () => {
                         <button
                           onClick={() => updateOrderStatus(order.id, 'processing')}
                           className="text-blue-600 hover:text-blue-900"
+                          title="Start Processing"
                         >
                           <Clock className="w-4 h-4" />
                         </button>
@@ -342,6 +334,7 @@ const OrdersPage: React.FC = () => {
                         <button
                           onClick={() => updateOrderStatus(order.id, 'delivered')}
                           className="text-green-600 hover:text-green-900"
+                          title="Mark as Delivered"
                         >
                           <Truck className="w-4 h-4" />
                         </button>

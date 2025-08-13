@@ -28,7 +28,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, name: string, phone?: string, isAdmin?: boolean) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, name: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ success: boolean; error?: string }>;
 }
@@ -48,11 +48,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isAdmin = profile?.role === 'admin';
-  const isMockMode = !isSupabaseConfigured;
 
   // Initialize auth state
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      toast.error('Database not configured. Please set up Supabase.');
       setIsLoading(false);
       return;
     }
@@ -68,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        toast.error('Failed to initialize authentication');
       } finally {
         setIsLoading(false);
       }
@@ -90,13 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleAuthenticatedUser = async (authUser: any) => {
     try {
-      // Skip email verification check for now to allow immediate login
-      // if (!isMockMode && !authUser.email_confirmed_at) {
-      //   toast.error('Please verify your email first');
-      //   await supabase.auth.signOut();
-      //   return;
-      // }
-
       const customUser: User = {
         id: authUser.id,
         email: authUser.email || '',
@@ -109,24 +103,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await fetchProfile(authUser.id);
     } catch (error) {
       console.error('Error handling authenticated user:', error);
+      toast.error('Failed to load user data');
     }
   };
 
   const fetchProfile = async (userId: string) => {
     try {
-      if (isMockMode) {
-        const mockProfile: Profile = {
-          id: userId,
-          email: user?.email || 'user@example.com',
-          name: user?.name || 'Mock User',
-          role: user?.email === 'admin@farm.com' || user?.email === 'emmanuelmbuli7@gmail.com' ? 'admin' : 'customer',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        setProfile(mockProfile);
-        return;
-      }
-
       const { data: existingProfile, error: fetchError } = await supabase!
         .from('profiles')
         .select('*')
@@ -185,9 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setProfile(existingProfile);
         }
-        return;
       }
-
     } catch (error) {
       console.error('Profile fetch error:', error);
       toast.error('Failed to load profile');
@@ -195,52 +175,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      return { success: false, error: 'Database not configured' };
+    }
+
     setIsLoading(true);
     try {
-      // Mock authentication
-      if (isMockMode) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (!email || !password) {
-          throw new Error('Email and password are required');
-        }
-
-        const mockUser: User = {
-          id: `mock-${Math.random().toString(36).substr(2, 9)}`,
-          email,
-          name: email.split('@')[0] || 'User',
-          role: email === 'admin@farm.com' || email === 'emmanuelmbuli7@gmail.com' ? 'admin' : 'customer',
-          createdAt: new Date().toISOString(),
-        };
-
-        const mockProfile: Profile = {
-          ...mockUser,
-          created_at: mockUser.createdAt,
-          updated_at: mockUser.createdAt,
-        };
-
-        setUser(mockUser);
-        setProfile(mockProfile);
-        toast.success('Logged in successfully!');
-        return { success: true };
+      // Validate inputs
+      if (!email || !password) {
+        throw new Error('Email and password are required');
       }
 
-      // Real authentication
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+
       const { data, error } = await supabase!.auth.signInWithPassword({ 
-        email, 
+        email: email.trim().toLowerCase(), 
         password 
       });
       
       if (error) throw error;
       
       if (data.user) {
-        // Skip email confirmation check for now
-        // if (!data.user.email_confirmed_at) {
-        //   toast.error('Please confirm your email before logging in. Check your inbox for the confirmation link.');
-        //   await supabase.auth.signOut();
-        //   return { success: false, error: 'Email not confirmed' };
-        // }
-
         toast.success('Logged in successfully!');
         return { success: true };
       }
@@ -262,48 +219,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     email: string, 
     password: string, 
     name: string, 
-    phone?: string, 
-    isAdmin: boolean = false
+    phone?: string
   ) => {
+    if (!isSupabaseConfigured) {
+      return { success: false, error: 'Database not configured' };
+    }
+
     // Validate required fields
+    if (!email || !password || !name) {
+      return { success: false, error: 'All fields are required' };
+    }
+
     if (!phone || phone.trim() === '') {
+      return { success: false, error: 'Phone number is required' };
+    }
+
+    if (password.length < 8) {
+      return { success: false, error: 'Password must be at least 8 characters long' };
+    }
+
+    // Password strength validation
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
       return { 
         success: false, 
-        error: 'Phone number is required' 
+        error: 'Password must contain uppercase, lowercase, and numbers' 
       };
     }
 
     setIsLoading(true);
     try {
-      if (isMockMode) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockUser: User = {
-          id: `mock-${Math.random().toString(36).substr(2, 9)}`,
-          email,
-          name,
-          role: isAdmin ? 'admin' : 'customer',
-          createdAt: new Date().toISOString(),
-        };
-
-        const mockProfile: Profile = {
-          ...mockUser,
-          phone,
-          created_at: mockUser.createdAt,
-          updated_at: mockUser.createdAt,
-        };
-
-        setUser(mockUser);
-        setProfile(mockProfile);
-        toast.success('Account created successfully!');
-        return { success: true };
-      }
-
       const { data, error } = await supabase!.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
-          data: { name, phone },
+          data: { name: name.trim(), phone: phone.trim() },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       });
@@ -317,10 +271,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: 'User already exists' };
         }
         
-        toast.success('Account created successfully! You can now log in.');
-
-        // Profile will be created automatically by the trigger
-
+        toast.success('Account created successfully! Please check your email to verify your account.');
         return { success: true };
       }
       
@@ -339,14 +290,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      if (isMockMode) {
-        // Mock logout
-        setUser(null);
-        setProfile(null);
-        toast.success('Logged out successfully');
-        return;
-      }
-
       const { error } = await supabase!.auth.signOut();
       if (error) throw error;
       
@@ -360,20 +303,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) {
+    if (!user || !isSupabaseConfigured) {
       return { success: false, error: 'Not authenticated' };
     }
 
-    if (isMockMode) {
-      // Mock profile update
-      if (profile) {
-        const updatedProfile = { ...profile, ...updates };
-        setProfile(updatedProfile);
-        toast.success('Profile updated successfully!');
-        return { success: true };
-      }
-      return { success: false, error: 'No profile found' };
-    }
     try {
       const { data, error } = await supabase!
         .from('profiles')

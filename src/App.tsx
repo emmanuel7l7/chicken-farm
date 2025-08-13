@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { Toaster } from "react-hot-toast";
@@ -24,6 +24,7 @@ import AdminLayout from "./components/admin/adminLayout";
 import Dashboard from "./components/admin/Dashboard";
 import OrdersPage from "./components/admin/OrdersPage";
 import AnalyticsPage from "./components/admin/AnalyticsPage";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,30 +32,101 @@ const AppContent: React.FC = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const { user, profile, isAuthenticated, logout, isLoading } = useAuth();
   const { getTotalItems } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: "1",
-      name: "Premium Layer Hens",
-      category: "layers",
-      price: 25000,
-      unit: "chicken",
-      description:
-        "High-quality layer hens that produce fresh eggs daily. Well-fed and healthy.",
-      image:
-        "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg",
-      isActive: true,
-    },
-    // ... other products
-  ]);
+  // Load products from database
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const transformedProducts: Product[] = data?.map(product => ({
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          price: parseFloat(product.price),
+          unit: product.unit,
+          description: product.description,
+          image: product.image_url || getDefaultImage(product.category),
+          isActive: product.is_active,
+        })) || [];
+
+        setProducts(transformedProducts);
+      } else {
+        // Fallback products if no database
+        setProducts([
+          {
+            id: "1",
+            name: "Premium Layer Hens",
+            category: "layers",
+            price: 25000,
+            unit: "chicken",
+            description: "High-quality layer hens that produce fresh eggs daily. Well-fed and healthy.",
+            image: "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg",
+            isActive: true,
+          },
+          {
+            id: "2",
+            name: "Broiler Chickens",
+            category: "broilers",
+            price: 20000,
+            unit: "chicken",
+            description: "Fast-growing broiler chickens perfect for meat production.",
+            image: "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg",
+            isActive: true,
+          },
+          {
+            id: "3",
+            name: "Fresh Farm Eggs",
+            category: "eggs",
+            price: 8500,
+            unit: "tray",
+            description: "Fresh eggs from free-range hens. 30 eggs per tray.",
+            image: "https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg",
+            isActive: true,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const getDefaultImage = (category: string) => {
+    switch (category) {
+      case 'layers':
+      case 'broilers':
+      case 'chicks':
+        return 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg';
+      case 'eggs':
+        return 'https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg';
+      case 'meat':
+        return 'https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg';
+      default:
+        return 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg';
+    }
+  };
 
   // Show loading spinner while auth is initializing
-  if (isLoading) {
+  if (isLoading || productsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <p className="text-gray-600">Loadinggggg...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -180,13 +252,21 @@ const AppContent: React.FC = () => {
                 <Route
                   index
                   element={
-                    <Dashboard products={products} setProducts={setProducts} />
+                    <Dashboard 
+                      products={products} 
+                      setProducts={setProducts}
+                      onProductsChange={loadProducts}
+                    />
                   }
                 />
                 <Route
                   path="dashboard"
                   element={
-                    <Dashboard products={products} setProducts={setProducts} />
+                    <Dashboard 
+                      products={products} 
+                      setProducts={setProducts}
+                      onProductsChange={loadProducts}
+                    />
                   }
                 />
                 <Route path="orders" element={<OrdersPage />} />

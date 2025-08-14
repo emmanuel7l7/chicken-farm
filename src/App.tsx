@@ -44,23 +44,24 @@ const AppContent: React.FC = () => {
     try {
       if (isSupabaseConfigured && supabase) {
         const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
+          .from("products")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        const transformedProducts: Product[] = data?.map(product => ({
-          id: product.id,
-          name: product.name,
-          category: product.category,
-          price: parseFloat(product.price),
-          unit: product.unit,
-          description: product.description,
-          image: product.image_url || getDefaultImage(product.category),
-          isActive: product.is_active,
-        })) || [];
+        const transformedProducts: Product[] =
+          data?.map((product) => ({
+            id: product.id,
+            name: product.name,
+            category: product.category,
+            price: parseFloat(product.price),
+            unit: product.unit,
+            description: product.description,
+            image: product.image_url || getDefaultImage(product.category),
+            isActive: product.is_active,
+          })) || [];
 
         setProducts(transformedProducts);
       } else {
@@ -72,8 +73,10 @@ const AppContent: React.FC = () => {
             category: "layers",
             price: 25000,
             unit: "chicken",
-            description: "High-quality layer hens that produce fresh eggs daily. Well-fed and healthy.",
-            image: "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg",
+            description:
+              "High-quality layer hens that produce fresh eggs daily. Well-fed and healthy.",
+            image:
+              "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg",
             isActive: true,
           },
           {
@@ -82,8 +85,10 @@ const AppContent: React.FC = () => {
             category: "broilers",
             price: 20000,
             unit: "chicken",
-            description: "Fast-growing broiler chickens perfect for meat production.",
-            image: "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg",
+            description:
+              "Fast-growing broiler chickens perfect for meat production.",
+            image:
+              "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg",
             isActive: true,
           },
           {
@@ -93,13 +98,14 @@ const AppContent: React.FC = () => {
             price: 8500,
             unit: "tray",
             description: "Fresh eggs from free-range hens. 30 eggs per tray.",
-            image: "https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg",
+            image:
+              "https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg",
             isActive: true,
           },
         ]);
       }
     } catch (error) {
-      console.error('Error loading products:', error);
+      console.error("Error loading products:", error);
     } finally {
       setProductsLoading(false);
     }
@@ -107,16 +113,16 @@ const AppContent: React.FC = () => {
 
   const getDefaultImage = (category: string) => {
     switch (category) {
-      case 'layers':
-      case 'broilers':
-      case 'chicks':
-        return 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg';
-      case 'eggs':
-        return 'https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg';
-      case 'meat':
-        return 'https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg';
+      case "layers":
+      case "broilers":
+      case "chicks":
+        return "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg";
+      case "eggs":
+        return "https://images.pexels.com/photos/1556707/pexels-photo-1556707.jpeg";
+      case "meat":
+        return "https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg";
       default:
-        return 'https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg';
+        return "https://images.pexels.com/photos/1300355/pexels-photo-1300355.jpeg";
     }
   };
 
@@ -252,8 +258,8 @@ const AppContent: React.FC = () => {
                 <Route
                   index
                   element={
-                    <Dashboard 
-                      products={products} 
+                    <Dashboard
+                      products={products}
                       setProducts={setProducts}
                       onProductsChange={loadProducts}
                     />
@@ -262,8 +268,8 @@ const AppContent: React.FC = () => {
                 <Route
                   path="dashboard"
                   element={
-                    <Dashboard 
-                      products={products} 
+                    <Dashboard
+                      products={products}
                       setProducts={setProducts}
                       onProductsChange={loadProducts}
                     />

@@ -109,6 +109,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Get the current auth user to access email and metadata
+      const { data: authData } = await supabase!.auth.getUser();
+      const authUser = authData.user;
+      
+      if (!authUser) {
+        throw new Error('No authenticated user found');
+      }
+
       const { data: existingProfile, error: fetchError } = await supabase!
         .from('profiles')
         .select('*')
@@ -117,11 +125,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
-          // Profile doesn't exist, create one using auth user data
-          const authUser = await supabase!.auth.getUser();
-          const userEmail = authUser.data.user?.email || '';
-          const userName = authUser.data.user?.user_metadata?.name || userEmail.split('@')[0] || 'User';
-          const userPhone = authUser.data.user?.user_metadata?.phone;
+          // Profile doesn't exist, create one
+          const userEmail = authUser.email || '';
+          const userName = authUser.user_metadata?.name || userEmail.split('@')[0] || 'User';
+          const userPhone = authUser.user_metadata?.phone;
           
           // Check if this email should be admin
           const isAdminEmail = userEmail === 'admin@farm.com' || userEmail === 'emmanuelmbuli7@gmail.com';
@@ -134,6 +141,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             phone: userPhone,
           };
 
+          console.log('Creating new profile:', newProfile);
+
           const { data: createdProfile, error: createError } = await supabase!
             .from('profiles')
             .insert([newProfile])
@@ -141,16 +150,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
 
           if (createError) {
+            console.error('Error creating profile:', createError);
             throw createError;
           }
 
+          console.log('Profile created successfully:', createdProfile);
           setProfile(createdProfile);
         } else {
+          console.error('Error fetching profile:', fetchError);
           throw fetchError;
         }
       } else if (existingProfile) {
         // Update existing profile to admin if it's the admin email
         if ((existingProfile.email === 'emmanuelmbuli7@gmail.com' || existingProfile.email === 'admin@farm.com') && existingProfile.role !== 'admin') {
+          console.log('Updating existing profile to admin:', existingProfile.email);
+          
           const { data: updatedProfile, error: updateError } = await supabase!
             .from('profiles')
             .update({ role: 'admin' })
@@ -162,15 +176,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Error updating profile to admin:', updateError);
             setProfile(existingProfile);
           } else {
+            console.log('Profile updated to admin successfully:', updatedProfile);
             setProfile(updatedProfile);
           }
         } else {
+          console.log('Using existing profile:', existingProfile);
           setProfile(existingProfile);
         }
       }
     } catch (error) {
       console.error('Profile fetch error:', error);
-      toast.error('Failed to load profile');
+      
+      // Try to create a basic profile if fetch completely fails
+      try {
+        const { data: authData } = await supabase!.auth.getUser();
+        const authUser = authData.user;
+        
+        if (authUser) {
+          const userEmail = authUser.email || '';
+          const isAdminEmail = userEmail === 'admin@farm.com' || userEmail === 'emmanuelmbuli7@gmail.com';
+          
+          const basicProfile = {
+            id: userId,
+            email: userEmail,
+            name: authUser.user_metadata?.name || userEmail.split('@')[0] || 'User',
+            role: isAdminEmail ? 'admin' as const : 'customer' as const,
+            phone: authUser.user_metadata?.phone,
+          };
+          
+          console.log('Attempting to create basic profile after error:', basicProfile);
+          
+          const { data: createdProfile, error: createError } = await supabase!
+            .from('profiles')
+            .insert([basicProfile])
+            .select()
+            .single();
+            
+          if (!createError && createdProfile) {
+            console.log('Basic profile created successfully:', createdProfile);
+            setProfile(createdProfile);
+            return;
+          }
+        }
+      } catch (retryError) {
+        console.error('Retry profile creation failed:', retryError);
+      }
+      
+      toast.error('Failed to load profile. Please try refreshing the page.');
     }
   };
 

@@ -71,28 +71,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const login = async (email: string, password: string) => {
     if (!isSupabaseConfigured || !supabase) {
-      // Fallback authentication for demo purposes
-      setIsLoading(true);
-      setTimeout(() => {
-        const mockUser = {
-          id: "demo-user-123",
-          email: email,
-          created_at: new Date().toISOString(),
-        };
-        const mockProfile = {
-          id: "demo-user-123",
-          email: email,
-          name: "Demo User",
-          role: email === "admin@demo.com" ? "admin" : "customer",
-        };
-        
-        setUser(mockUser);
-        setProfile(mockProfile);
-        setIsLoading(false);
-        toast.success("Logged in successfully (Demo Mode)!");
-      }, 1000);
-      
-      return { success: true };
+      const errorMsg = "Database not configured. Please add your Supabase credentials.";
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
     }
 
     setIsLoading(true);
@@ -121,29 +102,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     phone?: string
   ) => {
     if (!isSupabaseConfigured || !supabase) {
-      // Fallback registration for demo purposes
-      setIsLoading(true);
-      setTimeout(() => {
-        const mockUser = {
-          id: `demo-user-${Date.now()}`,
-          email: email,
-          created_at: new Date().toISOString(),
-        };
-        const mockProfile = {
-          id: mockUser.id,
-          email: email,
-          name: name,
-          phone: phone,
-          role: "customer",
-        };
-        
-        setUser(mockUser);
-        setProfile(mockProfile);
-        setIsLoading(false);
-        toast.success("Account created successfully (Demo Mode)!");
-      }, 1000);
-      
-      return { success: true };
+      const errorMsg = "Database not configured. Please add your Supabase credentials.";
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
     }
 
     setIsLoading(true);

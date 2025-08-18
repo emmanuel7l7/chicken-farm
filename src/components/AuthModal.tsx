@@ -74,26 +74,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg p-6 max-w-md w-full text-center shadow-xl">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Demo Mode
+            Database Configuration Required
           </h2>
           <p className="text-gray-600 mb-6">
-            Running in demo mode. Use any email/password to continue.
+            Please configure your Supabase database credentials to continue.
           </p>
           <p className="text-sm text-blue-600 mb-4">
-            Try: admin@demo.com for admin access
+            Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to your environment variables.
           </p>
           <button
-            onClick={() => {
-              setIsLogin(true);
-              setAuthError("");
-            }}
-            className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors mr-2"
-          >
-            Continue to Login
-          </button>
-          <button
             onClick={onClose}
-            className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
+            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors"
           >
             Close
           </button>

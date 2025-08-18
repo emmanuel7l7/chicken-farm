@@ -143,6 +143,29 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Show configuration message if Supabase not configured
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg p-8 max-w-md w-full text-center shadow-xl">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            Database Configuration Required
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Please add your Supabase credentials to continue:
+          </p>
+          <div className="text-left text-sm bg-gray-100 p-4 rounded-md mb-4">
+            <p className="font-mono">REACT_APP_SUPABASE_URL=your_supabase_url</p>
+            <p className="font-mono">REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key</p>
+          </div>
+          <p className="text-xs text-gray-500">
+            Add these to your environment variables in Replit Secrets
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Force login if not authenticated
   if (!isAuthenticated) {
     return (

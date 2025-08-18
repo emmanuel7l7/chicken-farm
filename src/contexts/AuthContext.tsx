@@ -51,6 +51,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchProfile = async (userId: string) => {
+    if (!supabase) {
+      console.error("Supabase client not configured");
+      return;
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
@@ -65,6 +70,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const login = async (email: string, password: string) => {
+    if (!supabase) {
+      const errorMsg = "Authentication service not configured";
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
     setIsLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -90,6 +101,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     name: string,
     phone?: string
   ) => {
+    if (!supabase) {
+      const errorMsg = "Authentication service not configured";
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
     setIsLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -122,7 +139,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
     setProfile(null);
     toast.info("Logged out");
@@ -130,6 +149,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     const getSession = async () => {
+      if (!supabase) {
+        setIsLoading(false);
+        return;
+      }
+
       const { data } = await supabase.auth.getSession();
       if (data?.session?.user) {
         setUser(data.session.user);
@@ -139,6 +163,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     };
 
     getSession();
+
+    if (!supabase) {
+      return;
+    }
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event: any, session: any) => {

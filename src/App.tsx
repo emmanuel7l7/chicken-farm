@@ -52,7 +52,7 @@ const AppContent: React.FC = () => {
         if (error) throw error;
 
         const transformedProducts: Product[] =
-          data?.map((p) => ({
+          data?.map((p: any) => ({
             id: p.id,
             name: p.name,
             category: p.category,

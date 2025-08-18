@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, Banknote, Loader } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import { processMobilePayment, validateTanzaniaPhoneNumber, formatPhoneNumber } from '../lib/mobilePayments';
 import { stripePromise, isStripeConfigured } from '../lib/stripe';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -40,7 +39,7 @@ const StripePaymentForm: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!stripe || !elements) {
       toast.error('Stripe not loaded');
       return;
@@ -145,12 +144,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
             description: `Order for ${cartItems.length} items`,
           }
         );
-        
+
         if (!paymentResult?.success) {
           toast.error(paymentResult?.message || 'Mobile payment failed');
           return;
         }
-        
+
         transactionId = paymentResult.transactionId;
         toast.success(paymentResult.message || 'Mobile payment initiated');
       } else if (formData.paymentMethod === 'stripe') {
@@ -163,8 +162,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, onSucces
       clearCart();
       onClose();
       onSuccess?.(transactionId || '');
-      
-      toast.success(formData.paymentMethod === 'cash_on_delivery' 
+
+      toast.success(formData.paymentMethod === 'cash_on_delivery'
         ? 'Order placed successfully! We will contact you soon to confirm your order.'
         : 'Order placed and payment processed successfully!'
       );

@@ -61,7 +61,7 @@ const OrdersPage: React.FC = () => {
 
       if (error) throw error;
 
-      const transformedOrders = ordersData?.map(order => ({
+      const transformedOrders = ordersData?.map((order: any) => ({
         id: order.id,
         user_name: order.profiles?.name || 'Unknown',
         user_email: order.profiles?.email || 'Unknown',

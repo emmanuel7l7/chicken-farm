@@ -77,7 +77,7 @@ const AnalyticsPage: React.FC = () => {
       if (ordersError) throw ordersError;
 
       // Transform orders data
-      const transformedOrders = ordersData?.map(order => ({
+      const transformedOrders = ordersData?.map((order: any) => ({
         id: order.id,
         user_name: order.profiles?.name || 'Unknown',
         user_email: order.profiles?.email || 'Unknown',
@@ -112,7 +112,7 @@ const AnalyticsPage: React.FC = () => {
 
       if (customersError) throw customersError;
 
-      const transformedCustomers = customersData?.map(customer => ({
+      const transformedCustomers = customersData?.map((customer: any) => ({
         id: customer.id,
         name: customer.name,
         email: customer.email,
@@ -126,7 +126,7 @@ const AnalyticsPage: React.FC = () => {
 
       // Calculate analytics
       const totalOrders = transformedOrders.length;
-      const totalRevenue = transformedOrders.reduce((sum, order) => sum + order.total_amount, 0);
+      const totalRevenue = transformedOrders.reduce((sum: number, order: any) => sum + order.total_amount, 0);
       const totalCustomers = transformedCustomers.length;
 
       setAnalytics({

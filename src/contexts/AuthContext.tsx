@@ -5,8 +5,8 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { supabase } from "../lib/supabase";
-import { toast } from "react-toastify";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { toast } from "react-hot-toast";
 
 interface Profile {
   id: string;
@@ -70,10 +70,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const login = async (email: string, password: string) => {
-    if (!supabase) {
-      const errorMsg = "Authentication service not configured";
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
+    if (!isSupabaseConfigured || !supabase) {
+      // Fallback authentication for demo purposes
+      setIsLoading(true);
+      setTimeout(() => {
+        const mockUser = {
+          id: "demo-user-123",
+          email: email,
+          created_at: new Date().toISOString(),
+        };
+        const mockProfile = {
+          id: "demo-user-123",
+          email: email,
+          name: "Demo User",
+          role: email === "admin@demo.com" ? "admin" : "customer",
+        };
+        
+        setUser(mockUser);
+        setProfile(mockProfile);
+        setIsLoading(false);
+        toast.success("Logged in successfully (Demo Mode)!");
+      }, 1000);
+      
+      return { success: true };
     }
 
     setIsLoading(true);
@@ -101,10 +120,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     name: string,
     phone?: string
   ) => {
-    if (!supabase) {
-      const errorMsg = "Authentication service not configured";
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
+    if (!isSupabaseConfigured || !supabase) {
+      // Fallback registration for demo purposes
+      setIsLoading(true);
+      setTimeout(() => {
+        const mockUser = {
+          id: `demo-user-${Date.now()}`,
+          email: email,
+          created_at: new Date().toISOString(),
+        };
+        const mockProfile = {
+          id: mockUser.id,
+          email: email,
+          name: name,
+          phone: phone,
+          role: "customer",
+        };
+        
+        setUser(mockUser);
+        setProfile(mockProfile);
+        setIsLoading(false);
+        toast.success("Account created successfully (Demo Mode)!");
+      }, 1000);
+      
+      return { success: true };
     }
 
     setIsLoading(true);
@@ -139,17 +178,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const logout = async () => {
-    if (supabase) {
+    if (isSupabaseConfigured && supabase) {
       await supabase.auth.signOut();
     }
     setUser(null);
     setProfile(null);
-    toast.info("Logged out");
+    toast.success("Logged out successfully");
   };
 
   useEffect(() => {
     const getSession = async () => {
-      if (!supabase) {
+      if (!isSupabaseConfigured || !supabase) {
         setIsLoading(false);
         return;
       }
@@ -164,7 +203,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     getSession();
 
-    if (!supabase) {
+    if (!isSupabaseConfigured || !supabase) {
       return;
     }
 

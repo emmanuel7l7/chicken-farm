@@ -7,8 +7,6 @@ import {
   X,
   LogOut,
   User,
-  ShoppingCart,
-  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';

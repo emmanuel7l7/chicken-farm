@@ -21,7 +21,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import AuthModal from "./components/AuthModal";
 import LoadingSpinner from "./components/LoadingSpinner";
 
-import AdminLayout from "./components/admin/AdminLayout";
+import AdminLayout from "./components/admin/adminLayout";
 import Dashboard from "./components/admin/Dashboard";
 import OrdersPage from "./components/admin/OrdersPage";
 import AnalyticsPage from "./components/admin/AnalyticsPage";
@@ -40,12 +40,7 @@ const AppContent: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
 
-  // Load products from Supabase or fallback
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
+  const loadProducts = React.useCallback(async () => {
     try {
       if (isSupabaseConfigured && supabase) {
         const { data, error } = await supabase
@@ -114,7 +109,12 @@ const AppContent: React.FC = () => {
     } finally {
       setProductsLoading(false);
     }
-  };
+  }, []);
+
+  // Load products from Supabase or fallback
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const getDefaultImage = (category: string) => {
     switch (category) {

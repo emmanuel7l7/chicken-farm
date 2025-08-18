@@ -5,7 +5,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../lib/supabase";
 import { toast } from "react-toastify";
 
 interface Profile {
@@ -13,6 +13,8 @@ interface Profile {
   email: string;
   name?: string;
   phone?: string;
+  role?: string;
+  address?: string;
 }
 
 interface AuthContextType {
@@ -139,7 +141,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     getSession();
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (_event: any, session: any) => {
         if (session?.user) {
           setUser(session.user);
           fetchProfile(session.user.id);

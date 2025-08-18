@@ -20,10 +20,10 @@ export const processMpesaPayment = async (request: MobilePaymentRequest): Promis
     // In a real implementation, you would call the M-Pesa API
     // For now, we'll simulate the payment process
     console.log('Processing M-Pesa payment:', request);
-    
+
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     // Mock successful response
     return {
       success: true,
@@ -44,10 +44,10 @@ export const processMpesaPayment = async (request: MobilePaymentRequest): Promis
 export const processTigoPesaPayment = async (request: MobilePaymentRequest): Promise<MobilePaymentResponse> => {
   try {
     console.log('Processing Tigo Pesa payment:', request);
-    
+
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     // Mock successful response
     return {
       success: true,
@@ -68,10 +68,10 @@ export const processTigoPesaPayment = async (request: MobilePaymentRequest): Pro
 export const processAirtelMoneyPayment = async (request: MobilePaymentRequest): Promise<MobilePaymentResponse> => {
   try {
     console.log('Processing Airtel Money payment:', request);
-    
+
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     // Mock successful response
     return {
       success: true,
@@ -113,20 +113,20 @@ export const processMobilePayment = async (
 export const validateTanzaniaPhoneNumber = (phoneNumber: string): boolean => {
   // Remove spaces and special characters
   const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
-  
+
   // Check for valid Tanzania phone number formats
   const patterns = [
     /^(\+255|255)[67]\d{8}$/, // +255 or 255 prefix
     /^0[67]\d{8}$/, // Local format starting with 0
   ];
-  
+
   return patterns.some(pattern => pattern.test(cleanNumber));
 };
 
 // Format phone number for API calls
 export const formatPhoneNumber = (phoneNumber: string): string => {
   const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
-  
+
   // Convert to international format
   if (cleanNumber.startsWith('0')) {
     return `+255${cleanNumber.substring(1)}`;
@@ -135,6 +135,6 @@ export const formatPhoneNumber = (phoneNumber: string): string => {
   } else if (cleanNumber.startsWith('+255')) {
     return cleanNumber;
   }
-  
+
   return cleanNumber;
 };

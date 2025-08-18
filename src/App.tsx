@@ -1,6 +1,7 @@
+// src/App.tsx
 import React, { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { CartProvider } from "./contexts/CartContext";
+import { CartProvider, useCart } from "./contexts/CartContext";
 import { Toaster } from "react-hot-toast";
 import {
   BrowserRouter as Router,
@@ -8,6 +9,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+
 import Sidebar from "./components/Sidebar";
 import { Menu, User, ShoppingCart } from "lucide-react";
 import FarmPage from "./components/FarmPage";
@@ -17,25 +19,28 @@ import Cart from "./components/Cart";
 import CheckoutModal from "./components/CheckoutModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 import AuthModal from "./components/AuthModal";
-import { useCart } from "./contexts/CartContext";
-import { Product } from "./types/Product";
 import LoadingSpinner from "./components/LoadingSpinner";
-import AdminLayout from "./components/admin/adminLayout";
+
+import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./components/admin/Dashboard";
 import OrdersPage from "./components/admin/OrdersPage";
 import AnalyticsPage from "./components/admin/AnalyticsPage";
+
+import { Product } from "./types/Product";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 
 const AppContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+
   const { user, profile, isAuthenticated, logout, isLoading } = useAuth();
   const { getTotalItems } = useCart();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
 
-  // Load products from database
+  // Load products from Supabase or fallback
   useEffect(() => {
     loadProducts();
   }, []);
@@ -52,20 +57,20 @@ const AppContent: React.FC = () => {
         if (error) throw error;
 
         const transformedProducts: Product[] =
-          data?.map((product) => ({
-            id: product.id,
-            name: product.name,
-            category: product.category,
-            price: parseFloat(product.price),
-            unit: product.unit,
-            description: product.description,
-            image: product.image_url || getDefaultImage(product.category),
-            isActive: product.is_active,
+          data?.map((p) => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            price: parseFloat(p.price),
+            unit: p.unit,
+            description: p.description,
+            image: p.image_url || getDefaultImage(p.category),
+            isActive: p.is_active,
           })) || [];
 
         setProducts(transformedProducts);
       } else {
-        // Fallback products if no database
+        // fallback mock products
         setProducts([
           {
             id: "1",
@@ -126,7 +131,7 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // Show loading spinner while auth is initializing
+  // Global loading spinner (auth + products)
   if (isLoading || productsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -138,15 +143,11 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Show auth modal if user is not authenticated
+  // Force login if not authenticated
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <AuthModal
-          isOpen={true}
-          onClose={() => {}} // Don't allow closing when not authenticated
-          onAuthSuccess={() => {}}
-        />
+        <AuthModal isOpen={true} onClose={() => {}} onAuthSuccess={() => {}} />
       </div>
     );
   }
@@ -160,24 +161,9 @@ const AppContent: React.FC = () => {
             position="top-right"
             toastOptions={{
               duration: 4000,
-              style: {
-                background: "#363636",
-                color: "#fff",
-              },
-              success: {
-                duration: 3000,
-                iconTheme: {
-                  primary: "#22c55e",
-                  secondary: "#fff",
-                },
-              },
-              error: {
-                duration: 5000,
-                iconTheme: {
-                  primary: "#ef4444",
-                  secondary: "#fff",
-                },
-              },
+              style: { background: "#363636", color: "#fff" },
+              success: { duration: 3000 },
+              error: { duration: 5000 },
             }}
           />
 
@@ -225,13 +211,13 @@ const AppContent: React.FC = () => {
           <Sidebar
             open={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
-            rightOnMobile={true}
+            rightOnMobile
           />
 
           {/* Main Content */}
           <div className="flex-1 md:ml-64 transition-all duration-300 pt-20 md:pt-0">
             <Routes>
-              {/* Public Routes */}
+              {/* Public */}
               <Route
                 path="/"
                 element={
@@ -244,7 +230,7 @@ const AppContent: React.FC = () => {
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
 
-              {/* Admin Routes */}
+              {/* Admin */}
               <Route
                 path="/admin"
                 element={
@@ -305,16 +291,14 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
-  return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <CartProvider>
-          <AppContent />
-        </CartProvider>
-      </AuthProvider>
-    </ErrorBoundary>
-  );
-};
+const App: React.FC = () => (
+  <ErrorBoundary>
+    <AuthProvider>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
+    </AuthProvider>
+  </ErrorBoundary>
+);
 
 export default App;

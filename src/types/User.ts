@@ -1,9 +1,11 @@
 export interface User {
   id: string;
-  email: string;
   name: string;
-  role: 'customer' | 'admin';
-  createdAt: string;
+  phone?: string;
+  email?: string;     // ✅ Add this
+  address?: string;   // ✅ Add this
+  role?: "user" | "admin" | "farmer"; // ✅ Add this (customize roles as you like)
+  created_at?: string;
 }
 
 export interface AuthState {
@@ -11,3 +13,4 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+

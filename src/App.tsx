@@ -155,12 +155,8 @@ const AppContent: React.FC = () => {
             Please add your Supabase credentials to continue:
           </p>
           <div className="text-left text-sm bg-gray-100 p-4 rounded-md mb-4">
-            <p className="font-mono">
-              REACT_APP_SUPABASE_URL=your_supabase_url
-            </p>
-            <p className="font-mono">
-              REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
-            </p>
+            <p className="font-mono">REACT_APP_SUPABASE_URL=your_supabase_url</p>
+            <p className="font-mono">REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key</p>
           </div>
           <p className="text-xs text-gray-500">
             Add these to your environment variables in Replit Secrets
